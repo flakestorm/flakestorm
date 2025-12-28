@@ -1,0 +1,113 @@
+# =============================================================================
+# COMMERCIAL/PROPRIETARY CODE - DO NOT COMMIT TO PUBLIC REPO
+# =============================================================================
+# The cloud/ directory contains proprietary commercial code and must NEVER
+# be committed to the public open-source repository.
+cloud/
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# =============================================================================
+# Rust
+# =============================================================================
+target/
+Cargo.lock
+
+# =============================================================================
+# IDE / Editor
+# =============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# =============================================================================
+# Project-specific
+# =============================================================================
+# Generated reports
+reports/
+*.html
+!docs/*.html
+
+# Local configuration (may contain secrets)
+entropix.yaml
+!entropix.yaml.example
+
+# Ollama models cache (optional, can be large)
+.ollama/
+
+# =============================================================================
+# Secrets and credentials
+# =============================================================================
+*.pem
+*.key
+.env
+.env.local
+.env.*.local
+secrets/
+
+# docs
+docs/
+
