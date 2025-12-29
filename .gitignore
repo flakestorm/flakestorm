@@ -109,8 +109,11 @@ flakestorm.yaml
 secrets/
 
 # docs (exclude all, but allow specific files referenced in README)
-docs/
-# Allow docs files referenced in README.md
+# First, un-ignore the docs directory itself
+!docs/
+# Then ignore all files in docs
+docs/*
+# Now un-ignore the specific files we want to track
 !docs/USAGE_GUIDE.md
 !docs/CONFIGURATION_GUIDE.md
 !docs/TEST_SCENARIOS.md
