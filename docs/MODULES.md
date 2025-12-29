@@ -139,7 +139,7 @@ Pydantic was chosen over alternatives (dataclasses, attrs) because:
 ```python
 class AgentProtocol(Protocol):
     """Protocol that all agent adapters must implement."""
-    
+
     async def invoke(self, prompt: str) -> AgentResponse:
         """Send prompt to agent and return response."""
         ...
@@ -148,7 +148,7 @@ class AgentProtocol(Protocol):
 ```python
 class HTTPAgentAdapter(BaseAgentAdapter):
     """Adapter for HTTP-based agents."""
-    
+
     async def invoke(self, prompt: str) -> AgentResponse:
         # 1. Format request using template
         # 2. Send HTTP POST with headers
@@ -159,7 +159,7 @@ class HTTPAgentAdapter(BaseAgentAdapter):
 ```python
 class PythonAgentAdapter(BaseAgentAdapter):
     """Adapter for Python function agents."""
-    
+
     async def invoke(self, prompt: str) -> AgentResponse:
         # 1. Import the specified module
         # 2. Call the function with prompt
@@ -197,7 +197,7 @@ The adapter pattern was chosen because:
 ```python
 class EntropixOrchestrator:
     """Main orchestration class."""
-    
+
     async def run(self) -> TestResults:
         """Execute the full test suite."""
         # 1. Generate mutations for all golden prompts
@@ -323,7 +323,7 @@ class Mutation:
     type: MutationType     # Type of mutation
     difficulty: float      # Scoring weight
     metadata: dict         # Additional info
-    
+
     @property
     def id(self) -> str:
         """Unique hash for this mutation."""
@@ -356,11 +356,11 @@ String enum was chosen because:
 ```python
 class MutationEngine:
     """Engine for generating adversarial mutations."""
-    
+
     def __init__(self, config: LLMConfig):
         self.client = ollama.AsyncClient(host=config.host)
         self.model = config.model
-    
+
     async def generate_mutations(
         self,
         prompt: str,
@@ -421,16 +421,16 @@ Local LLM was chosen over cloud APIs because:
 ```python
 class ContainsChecker(BaseChecker):
     """Check if response contains a value."""
-    
+
 class NotContainsChecker(BaseChecker):
     """Check if response does NOT contain a value."""
-    
+
 class RegexChecker(BaseChecker):
     """Check if response matches a regex pattern."""
-    
+
 class LatencyChecker(BaseChecker):
     """Check if response time is within limit."""
-    
+
 class ValidJsonChecker(BaseChecker):
     """Check if response is valid JSON."""
 ```
@@ -461,13 +461,13 @@ Checker pattern with registry allows:
 ```python
 class LocalEmbedder:
     """Local sentence embeddings using sentence-transformers."""
-    
+
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
-    
+
     def embed(self, text: str) -> np.ndarray:
         return self.model.encode(text)
-    
+
     def similarity(self, text1: str, text2: str) -> float:
         emb1, emb2 = self.embed(text1), self.embed(text2)
         return cosine_similarity(emb1, emb2)
@@ -476,7 +476,7 @@ class LocalEmbedder:
 ```python
 class SimilarityChecker(BaseChecker):
     """Check semantic similarity to expected response."""
-    
+
     def check(self, response: str, latency_ms: float) -> CheckResult:
         similarity = self.embedder.similarity(response, expected)
         return CheckResult(passed=similarity >= threshold)
@@ -513,7 +513,7 @@ sentence-transformers was chosen because:
 ```python
 class ExcludesPIIChecker(BaseChecker):
     """Check that response doesn't contain PII."""
-    
+
     PII_PATTERNS = [
         r'\b\d{3}-\d{2}-\d{4}\b',      # SSN
         r'\b\d{16}\b',                   # Credit card
@@ -525,7 +525,7 @@ class ExcludesPIIChecker(BaseChecker):
 ```python
 class RefusalChecker(BaseChecker):
     """Check that agent refuses dangerous requests."""
-    
+
     REFUSAL_PHRASES = [
         "I cannot", "I'm unable to", "I won't",
         "against my guidelines", "not appropriate"
@@ -708,4 +708,3 @@ Where n = number of mutations, m = mutation types.
 ---
 
 *This documentation reflects the current implementation. Always refer to the source code for the most up-to-date information.*
-

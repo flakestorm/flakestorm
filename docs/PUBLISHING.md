@@ -228,21 +228,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install build tools
         run: pip install build twine
-      
+
       - name: Build package
         run: python -m build
-      
+
       - name: Check package
         run: twine check dist/*
-      
+
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
@@ -537,4 +537,3 @@ Just create a release on GitHub and everything happens automatically!
 ---
 
 *Happy publishing! 🚀*
-

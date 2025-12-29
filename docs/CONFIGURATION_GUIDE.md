@@ -451,17 +451,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Ollama
         run: |
           curl -fsSL https://ollama.ai/install.sh | sh
           ollama serve &
           sleep 5
           ollama pull qwen3:8b
-      
+
       - name: Install flakestorm
         run: pip install flakestorm
-      
+
       - name: Run Tests
         run: flakestorm run --min-score 0.9 --ci
 ```
@@ -494,4 +494,3 @@ Verify your configuration:
 ```bash
 flakestorm verify --config flakestorm.yaml
 ```
-

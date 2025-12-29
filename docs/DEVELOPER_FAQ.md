@@ -193,16 +193,16 @@ Qwen Coder 3 was chosen because:
 TEMPLATES = {
     MutationType.PARAPHRASE: """
     Rewrite this prompt with different words but same meaning.
-    
+
     Original: {prompt}
-    
+
     Rewritten:
     """,
     MutationType.NOISE: """
     Add 2-3 realistic typos to this prompt:
-    
+
     Original: {prompt}
-    
+
     With typos:
     """
 }
@@ -268,11 +268,11 @@ class SimilarityChecker:
         # 1. Embed both texts to vectors
         response_vec = self.embedder.embed(response)      # [0.1, 0.2, ...]
         expected_vec = self.embedder.embed(self.expected) # [0.15, 0.18, ...]
-        
+
         # 2. Calculate cosine similarity
         similarity = cosine_similarity(response_vec, expected_vec)
         # Returns value between -1 and 1 (typically 0-1 for text)
-        
+
         # 3. Compare to threshold
         return CheckResult(passed=similarity >= self.threshold)
 ```
@@ -288,7 +288,7 @@ The embedding model (`all-MiniLM-L6-v2`) converts text to 384-dimensional vector
 ```python
 class SimilarityChecker:
     _embedder: LocalEmbedder | None = None  # Class variable, shared
-    
+
     @property
     def embedder(self) -> LocalEmbedder:
         if SimilarityChecker._embedder is None:
@@ -445,12 +445,12 @@ class PythonAgentAdapter:
         module_path, func_name = self.endpoint.rsplit(":", 1)
         module = importlib.import_module(module_path)
         func = getattr(module, func_name)
-        
+
         # Call directly
         start = time.perf_counter()
         response = await func(prompt) if asyncio.iscoroutinefunction(func) else func(prompt)
         latency = (time.perf_counter() - start) * 1000
-        
+
         return AgentResponse(text=response, latency_ms=latency)
 ```
 
@@ -514,11 +514,11 @@ class TestNewFeature:
     @pytest.fixture
     def feature(self):
         return NewFeature(config={...})
-    
+
     def test_basic_functionality(self, feature):
         result = feature.do_something()
         assert result == expected
-    
+
     def test_edge_case(self, feature):
         with pytest.raises(ValueError):
             feature.do_something(invalid_input)
@@ -543,9 +543,9 @@ class TestNewFeature:
    ```python
    TEMPLATES[MutationType.MY_NEW_TYPE] = """
    Your prompt template here.
-   
+
    Original: {prompt}
-   
+
    Modified:
    """
    ```
@@ -606,14 +606,14 @@ class TestNewFeature:
 class MarkdownReportGenerator:
     def __init__(self, results: TestResults):
         self.results = results
-    
+
     def generate(self) -> str:
         """Generate markdown content."""
         md = f"# flakestorm Report\n\n"
         md += f"**Score:** {self.results.statistics.robustness_score:.2f}\n"
         # ... more content
         return md
-    
+
     def save(self, path: Path = None) -> Path:
         path = path or Path(f"reports/report_{timestamp}.md")
         path.write_text(self.generate())
@@ -676,4 +676,3 @@ The HTML report shows:
 ---
 
 *Have more questions? Open an issue on GitHub!*
-

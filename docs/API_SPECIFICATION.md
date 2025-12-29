@@ -447,4 +447,3 @@ fi
 | 0 | Success |
 | 1 | Error (config, connection, etc.) |
 | 1 | CI mode: Score below threshold |
-

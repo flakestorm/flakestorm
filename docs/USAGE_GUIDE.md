@@ -219,10 +219,10 @@ open reports/entropix_report_*.html
 golden_prompts:
   # Simple intent
   - "Hello, how are you?"
-  
+
   # Complex intent with parameters
   - "Book a flight from New York to Los Angeles departing March 15th"
-  
+
   # Edge case
   - "What if I need to cancel my booking?"
 ```
@@ -247,30 +247,30 @@ invariants:
   # Response must contain a keyword
   - type: contains
     value: "booked"
-    
+
   # Response must NOT contain certain content
   - type: not_contains
     value: "error"
-    
+
   # Response must match regex pattern
   - type: regex
     pattern: "confirmation.*#[A-Z0-9]+"
-    
+
   # Response time limit
   - type: latency
     max_ms: 3000
-    
+
   # Must be valid JSON
   - type: valid_json
-    
+
   # Semantic similarity to expected response
   - type: similarity
     expected: "Your flight has been booked successfully"
     threshold: 0.8
-    
+
   # Safety: no PII leakage
   - type: excludes_pii
-    
+
   # Safety: must include refusal for dangerous requests
   - type: refusal
 ```
@@ -308,23 +308,23 @@ Weights by mutation type:
 agent:
   # Required: Where to send requests
   endpoint: "http://localhost:8000/chat"
-  
+
   # Agent type: http, python, or langchain
   type: http
-  
+
   # Request timeout in seconds
   timeout: 30
-  
+
   # HTTP-specific settings
   headers:
     Authorization: "Bearer ${API_KEY}"  # Environment variable expansion
     Content-Type: "application/json"
-  
+
   # How to format the request body
   # Available placeholders: {prompt}
   request_template: |
     {"message": "{prompt}", "stream": false}
-  
+
   # JSONPath to extract response from JSON
   response_path: "$.response"
 
@@ -342,14 +342,14 @@ golden_prompts:
 mutations:
   # Number of mutations per golden prompt
   count: 20
-  
+
   # Which mutation types to use
   types:
     - paraphrase
     - noise
     - tone_shift
     - prompt_injection
-  
+
   # Weights for scoring (higher = more important to pass)
   weights:
     paraphrase: 1.0
@@ -363,10 +363,10 @@ mutations:
 llm:
   # Ollama model to use
   model: "qwen2.5-coder:7b"
-  
+
   # Ollama server URL
   host: "http://localhost:11434"
-  
+
   # Generation temperature (higher = more creative mutations)
   temperature: 0.8
 
@@ -379,22 +379,22 @@ invariants:
     value: "confirmed"
     case_sensitive: false
     prompt_filter: "book"  # Only apply to prompts containing "book"
-  
+
   # Example: Response time limit
   - type: latency
     max_ms: 5000
-  
+
   # Example: Must be valid JSON
   - type: valid_json
-  
+
   # Example: Semantic similarity
   - type: similarity
     expected: "I've booked your flight"
     threshold: 0.75
-  
+
   # Example: No PII in response
   - type: excludes_pii
-  
+
   # Example: Must refuse dangerous requests
   - type: refusal
     prompt_filter: "ignore|bypass|jailbreak"
@@ -405,13 +405,13 @@ invariants:
 advanced:
   # Concurrent test executions
   concurrency: 10
-  
+
   # Retry failed requests
   retries: 3
-  
+
   # Output directory for reports
   output_dir: "./reports"
-  
+
   # Fail threshold for CI mode
   min_score: 0.8
 ```
@@ -598,10 +598,10 @@ agent:
 def handle_message(prompt: str) -> str:
     """
     flakestorm will call this function directly.
-    
+
     Args:
         prompt: The user message (mutated)
-    
+
     Returns:
         The agent's response as a string
     """
@@ -648,40 +648,40 @@ on:
 jobs:
   reliability-test:
     runs-on: ubuntu-latest
-    
+
     services:
       ollama:
         image: ollama/ollama
         ports:
           - 11434:11434
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install flakestorm
           pip install -r requirements.txt
-      
+
       - name: Pull Ollama model
         run: |
           curl -X POST http://localhost:11434/api/pull \
             -d '{"name": "qwen2.5-coder:7b"}'
-      
+
       - name: Start agent
         run: |
           python -m my_agent &
           sleep 5  # Wait for startup
-      
+
       - name: Run flakestorm tests
         run: |
           flakestorm run --ci --min-score 0.8 --output json
-      
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         if: always()
@@ -737,9 +737,9 @@ Override default mutation prompts:
 mutations:
   templates:
     paraphrase: |
-      Rewrite this prompt with completely different words 
+      Rewrite this prompt with completely different words
       but preserve the exact meaning: "{prompt}"
-    
+
     noise: |
       Add realistic typos and formatting errors to this prompt.
       Make 2-3 small mistakes: "{prompt}"
@@ -755,7 +755,7 @@ invariants:
   - type: contains
     value: "confirmation"
     prompt_filter: "book|reserve|schedule"
-  
+
   # Only for cancellation prompts
   - type: regex
     pattern: "cancelled|refunded"
@@ -771,7 +771,7 @@ mutations:
   weights:
     # Security is critical - weight injection tests higher
     prompt_injection: 2.0
-    
+
     # Typo tolerance is less important
     noise: 0.5
 ```
@@ -868,4 +868,3 @@ flakestorm run
 ---
 
 *Built with ❤️ by the flakestorm Team*
-

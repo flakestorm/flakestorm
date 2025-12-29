@@ -137,7 +137,7 @@ flakestorm/
    ```bash
    git commit -m "feat: Add new mutation type for XXX"
    ```
-   
+
    Use conventional commits:
    - `feat:` New feature
    - `fix:` Bug fix
@@ -192,15 +192,15 @@ flakestorm/
 ```python
 class TestMyFeature:
     """Tests for MyFeature."""
-    
+
     def test_happy_path(self):
         """Test normal operation."""
         ...
-    
+
     def test_edge_case(self):
         """Test edge case handling."""
         ...
-    
+
     def test_error_handling(self):
         """Test error conditions."""
         ...
@@ -238,20 +238,20 @@ async def test_mutation_generation(mock_client):
 def function_name(param1: str, param2: int = 10) -> bool:
     """
     Brief description of function.
-    
+
     Longer description if needed. Explain what the function
     does, not how it does it.
-    
+
     Args:
         param1: Description of param1
         param2: Description of param2
-        
+
     Returns:
         Description of return value
-        
+
     Raises:
         ValueError: When param1 is empty
-        
+
     Example:
         >>> result = function_name("test")
         >>> print(result)
@@ -288,4 +288,3 @@ Contributors are recognized in:
 - GitHub contributors page
 
 Thank you for contributing to flakestorm!
-
