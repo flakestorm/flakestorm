@@ -16,15 +16,12 @@ class MutationType(str, Enum):
     """
     Types of adversarial mutations.
 
-    Open Source Edition includes 5 mutation types:
+    Includes 5 mutation types:
     - PARAPHRASE: Semantic rewrites
     - NOISE: Typos and spelling errors
     - TONE_SHIFT: Tone changes
     - PROMPT_INJECTION: Basic adversarial attacks
     - CUSTOM: User-defined mutation templates
-
-    Advanced mutations (sophisticated prompt injections, jailbreaks)
-    are available in flakestorm Cloud.
     """
 
     PARAPHRASE = "paraphrase"

@@ -13,14 +13,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 
 from flakestorm import __version__
-from flakestorm.core.limits import (
-    CLOUD_URL,
-    MAX_MUTATIONS_PER_RUN,
-    print_upgrade_banner,
-)
 from flakestorm.core.runner import FlakeStormRunner
 
 # Create the main app
@@ -37,10 +31,7 @@ console = Console()
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        console.print(
-            f"[bold blue]flakestorm[/bold blue] version {__version__} [dim](Open Source Edition)[/dim]"
-        )
-        console.print(f"[dim]→ Upgrade to Cloud: {CLOUD_URL}[/dim]")
+        console.print(f"[bold blue]flakestorm[/bold blue] version {__version__}")
         raise typer.Exit()
 
 
@@ -410,84 +401,6 @@ def score(
     Useful for CI/CD scripts that need to parse the score.
     """
     asyncio.run(_score_async(config))
-
-
-@app.command()
-def cloud() -> None:
-    """
-    Learn about flakestorm Cloud features.
-
-    flakestorm Cloud provides 20x faster execution, advanced features,
-    and team collaboration.
-    """
-    print_upgrade_banner(console, reason="20x faster tests")
-
-    console.print("\n[bold]Feature Comparison:[/bold]\n")
-
-    # Feature comparison table
-    features = [
-        ("Mutation Types", "5 basic", "[green]All types[/green]"),
-        ("Mutations/Run", f"{MAX_MUTATIONS_PER_RUN}", "[green]Unlimited[/green]"),
-        (
-            "Execution",
-            "[yellow]Sequential[/yellow]",
-            "[green]Parallel (20x faster)[/green]",
-        ),
-        ("LLM", "Local only", "[green]Cloud + Local[/green]"),
-        ("PII Detection", "Basic regex", "[green]Advanced NER + ML[/green]"),
-        ("Prompt Injection", "Basic", "[green]ML-powered[/green]"),
-        ("Factuality Check", "[red]❌[/red]", "[green]✅[/green]"),
-        ("Test History", "[red]❌[/red]", "[green]✅ Dashboard[/green]"),
-        ("GitHub Actions", "[red]❌[/red]", "[green]✅ One-click setup[/green]"),
-        ("Team Features", "[red]❌[/red]", "[green]✅ Sharing & SSO[/green]"),
-    ]
-
-    console.print("  [dim]Feature              Open Source    Cloud[/dim]")
-    console.print("  " + "─" * 50)
-    for feature, oss, cloud in features:
-        console.print(f"  {feature:<20} {oss:<14} {cloud}")
-
-    console.print("\n[bold cyan]Pricing:[/bold cyan]")
-    console.print("  • [bold]Community:[/bold] $0/mo (current)")
-    console.print("  • [bold]Pro:[/bold] $49/mo - Parallel + Cloud LLMs")
-    console.print("  • [bold]Team:[/bold] $299/mo - All features + collaboration")
-
-    console.print(
-        f"\n[bold]→ Get started:[/bold] [link={CLOUD_URL}]{CLOUD_URL}[/link]\n"
-    )
-
-
-@app.command()
-def limits() -> None:
-    """
-    Show Open Source edition limits.
-
-    Displays the feature limitations of the Open Source edition
-    and how to unlock more with flakestorm Cloud.
-    """
-    console.print(
-        Panel(
-            Text.from_markup(
-                "[bold]Open Source Edition Limits[/bold]\n\n"
-                f"• [yellow]Max {MAX_MUTATIONS_PER_RUN} mutations[/yellow] per test run\n"
-                "• [yellow]Sequential execution[/yellow] (one test at a time)\n"
-                "• [yellow]5 mutation types[/yellow]: paraphrase, noise, tone, injection, custom\n"
-                "• [yellow]Local LLM only[/yellow] (Ollama/llama.cpp)\n"
-                "• [yellow]Basic PII detection[/yellow] (regex patterns)\n"
-                "• [red]No GitHub Actions[/red] CI/CD integration\n"
-                "• [red]No test history[/red] or dashboard\n"
-                "• [red]No team features[/red]\n\n"
-                "[bold green]Why these limits?[/bold green]\n"
-                "The Open Source edition is designed for:\n"
-                "• Learning and experimentation\n"
-                "• Small test suites\n"
-                "• Individual developers\n\n"
-                f"[bold]Upgrade for production:[/bold] {CLOUD_URL}"
-            ),
-            title="[bold blue]flakestorm Open Source[/bold blue]",
-            border_style="blue",
-        )
-    )
 
 
 async def _score_async(config: Path) -> None:

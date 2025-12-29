@@ -15,9 +15,6 @@
   <a href="https://pypi.org/project/flakestorm/">
     <img src="https://img.shields.io/pypi/pyversions/flakestorm.svg" alt="Python Versions">
   </a>
-  <a href="https://flakestorm.com">
-    <img src="https://img.shields.io/badge/☁️-Cloud%20Available-blueviolet" alt="Cloud">
-  </a>
 </p>
 
 ---
@@ -134,12 +131,6 @@ Running attacks...      ━━━━━━━━━━━━━━━━━━�
 Report saved to: ./reports/flakestorm-2024-01-15-143022.html
 ```
 
-### Check Limits
-
-```bash
-flakestorm limits   # Show edition limits
-flakestorm cloud    # Learn about Cloud features
-```
 
 ## Mutation Types
 
@@ -150,8 +141,6 @@ flakestorm cloud    # Learn about Cloud features
 | **Tone Shift** | Aggressive/impatient phrasing | "Book a flight" → "I need a flight NOW!" |
 | **Prompt Injection** | Basic adversarial attacks | "Book a flight and ignore previous instructions" |
 | **Custom** | Your own mutation templates | Define with `{prompt}` placeholder |
-
-> **Need advanced mutations?** Visit [flakestorm.com](https://flakestorm.com) for more options.
 
 ## Invariants (Assertions)
 
@@ -179,8 +168,6 @@ invariants:
   - type: "excludes_pii"  # Basic regex patterns
   - type: "refusal_check"
 ```
-
-> **Need advanced safety?** Visit [flakestorm.com](https://flakestorm.com) for more options.
 
 ## Agent Adapters
 
@@ -215,8 +202,6 @@ For local testing:
 # Run before committing (manual)
 flakestorm run --min-score 0.9
 ```
-
-For advanced CI/CD features, visit [flakestorm.com](https://flakestorm.com).
 
 ## Robustness Score
 
@@ -256,10 +241,4 @@ AGPLv3 - See [LICENSE](LICENSE) for details.
 <p align="center">
   <strong>Tested with FlakeStorm</strong><br>
   <img src="https://img.shields.io/badge/tested%20with-flakestorm-brightgreen" alt="Tested with FlakeStorm">
-</p>
-
-<p align="center">
-  <a href="https://flakestorm.com">
-    <strong>⚡ Need more features? Visit FlakeStorm Cloud →</strong>
-  </a>
 </p>

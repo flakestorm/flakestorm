@@ -154,7 +154,7 @@ class HuggingFaceModelProvider:
             >>> model_name = provider.import_to_ollama(path, "mistral-attacker")
             >>> # Now use with: ollama run mistral-attacker
         """
-        import subprocess
+        import subprocess  # nosec B404
         import tempfile
 
         model_path = Path(model_path)
@@ -196,7 +196,7 @@ SYSTEM You are a helpful assistant that generates text variations.
 
         try:
             # Run ollama create command
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603, B607
                 ["ollama", "create", model_name, "-f", modelfile_path],
                 capture_output=True,
                 text=True,
@@ -270,7 +270,7 @@ SYSTEM You are a helpful assistant that generates text variations.
 
         try:
             req = urllib.request.Request(f"{host}/api/version")
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=5) as response:  # nosec B310
                 return response.status == 200
         except (urllib.error.URLError, TimeoutError):
             return False
@@ -297,7 +297,7 @@ SYSTEM You are a helpful assistant that generates text variations.
 
         try:
             req = urllib.request.Request(f"{host}/api/tags")
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
                 data = json.loads(response.read().decode())
                 return [model["name"] for model in data.get("models", [])]
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):

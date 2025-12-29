@@ -4,12 +4,7 @@ Orchestrator for flakestorm Test Runs
 Coordinates the entire testing process: mutation generation,
 agent invocation, invariant verification, and result aggregation.
 
-Open Source Edition:
-- Sequential execution only (no parallelism)
-- Maximum 50 mutations per test run
-- Basic mutation types only
-
-Upgrade to flakestorm Cloud for parallel execution and advanced features.
+Runs tests sequentially with a maximum of 50 mutations per test run.
 """
 
 from __future__ import annotations
@@ -29,14 +24,9 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from flakestorm.core.limits import (
-    MAX_MUTATIONS_PER_RUN,
-    PARALLEL_EXECUTION_ENABLED,
-    check_mutation_limit,
-    print_completion_upsell,
-    print_limit_warning,
-    print_sequential_notice,
-)
+# Hardcoded limits for open source edition
+MAX_MUTATIONS_PER_RUN = 50
+PARALLEL_EXECUTION_ENABLED = False  # Sequential execution only
 
 if TYPE_CHECKING:
     from flakestorm.assertions.verifier import InvariantVerifier
@@ -116,7 +106,7 @@ class Orchestrator:
         """
         Execute the full test run.
 
-        Open Source Edition runs sequentially. Upgrade to Cloud for parallel.
+        Runs tests sequentially with a maximum of 50 mutations per run.
 
         Returns:
             TestResults containing all test outcomes
@@ -128,26 +118,17 @@ class Orchestrator:
         self.state = OrchestratorState()
         all_results: list[MutationResult] = []
 
-        # Check limits and show notices
-        if self.show_progress:
-            print_sequential_notice(self.console)
-
         # Phase 1: Generate all mutations
         all_mutations = await self._generate_mutations()
 
-        # Enforce mutation limit for Open Source
+        # Enforce mutation limit
         if len(all_mutations) > MAX_MUTATIONS_PER_RUN:
-            violation = check_mutation_limit(
-                self.config.mutations.count,
-                len(self.config.golden_prompts),
-            )
-            if violation:
-                print_limit_warning(self.console, violation)
             # Truncate to limit
             all_mutations = all_mutations[:MAX_MUTATIONS_PER_RUN]
-            self.console.print(
-                f"[yellow]⚠️ Limited to {MAX_MUTATIONS_PER_RUN} mutations (Open Source)[/yellow]\n"
-            )
+            if self.show_progress:
+                self.console.print(
+                    f"[yellow]⚠️ Limited to {MAX_MUTATIONS_PER_RUN} mutations per run[/yellow]\n"
+                )
 
         self.state.total_mutations = len(all_mutations)
 
@@ -178,10 +159,6 @@ class Orchestrator:
         self.state.completed_at = datetime.now()
 
         statistics = self._calculate_statistics(all_results)
-
-        # Show upgrade prompt based on duration
-        if self.show_progress:
-            print_completion_upsell(self.console, self.state.duration_seconds)
 
         return TestResults(
             config=self.config,
@@ -235,31 +212,15 @@ class Orchestrator:
         mutations: list[tuple[str, Mutation]],
     ) -> list[MutationResult]:
         """
-        Run all mutations.
-
-        Open Source Edition: Sequential execution (one at a time).
-        Cloud Edition: Parallel execution with configurable concurrency.
+        Run all mutations sequentially (one at a time).
         """
-        # Open Source: Force sequential execution (concurrency = 1)
-        concurrency = (
-            1 if not PARALLEL_EXECUTION_ENABLED else self.config.advanced.concurrency
-        )
-        semaphore = asyncio.Semaphore(concurrency)
-
-        # Sequential execution for Open Source
-        if not PARALLEL_EXECUTION_ENABLED:
-            results = []
-            for original, mutation in mutations:
-                result = await self._run_single_mutation(original, mutation, semaphore)
-                results.append(result)
-            return results
-
-        # Parallel execution (Cloud only)
-        tasks = [
-            self._run_single_mutation(original, mutation, semaphore)
-            for original, mutation in mutations
-        ]
-        return await asyncio.gather(*tasks)
+        # Sequential execution only
+        semaphore = asyncio.Semaphore(1)
+        results = []
+        for original, mutation in mutations:
+            result = await self._run_single_mutation(original, mutation, semaphore)
+            results.append(result)
+        return results
 
     async def _run_mutations_with_progress(
         self,
@@ -268,39 +229,16 @@ class Orchestrator:
         task_id: int,
     ) -> list[MutationResult]:
         """
-        Run all mutations with progress display.
-
-        Open Source Edition: Sequential execution.
+        Run all mutations with progress display (sequential execution).
         """
-        # Open Source: Force sequential execution
-        concurrency = (
-            1 if not PARALLEL_EXECUTION_ENABLED else self.config.advanced.concurrency
-        )
-        semaphore = asyncio.Semaphore(concurrency)
+        # Sequential execution only
+        semaphore = asyncio.Semaphore(1)
         results: list[MutationResult] = []
 
-        # Sequential execution for Open Source
-        if not PARALLEL_EXECUTION_ENABLED:
-            for original, mutation in mutations:
-                result = await self._run_single_mutation(original, mutation, semaphore)
-                progress.update(task_id, advance=1)
-                results.append(result)
-            return results
-
-        # Parallel execution (Cloud only)
-        async def run_with_progress(
-            original: str,
-            mutation: Mutation,
-        ) -> MutationResult:
+        for original, mutation in mutations:
             result = await self._run_single_mutation(original, mutation, semaphore)
             progress.update(task_id, advance=1)
-            return result
-
-        tasks = [
-            run_with_progress(original, mutation) for original, mutation in mutations
-        ]
-
-        results = await asyncio.gather(*tasks)
+            results.append(result)
         return results
 
     async def _run_single_mutation(

@@ -69,11 +69,10 @@ class MutationConfig(BaseModel):
     """
     Configuration for mutation generation.
 
-    Open Source Edition Limits:
+    Limits:
     - Maximum 50 total mutations per test run
     - 5 mutation types: paraphrase, noise, tone_shift, prompt_injection, custom
 
-    Upgrade to flakestorm Cloud for unlimited mutations and advanced types.
     """
 
     count: int = Field(
