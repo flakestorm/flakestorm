@@ -7,13 +7,10 @@
 
 <p align="center">
   <a href="https://github.com/flakestorm/flakestorm/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-AGPLv3-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
-  <a href="https://pypi.org/project/flakestorm/">
-    <img src="https://img.shields.io/pypi/v/flakestorm.svg" alt="PyPI">
-  </a>
-  <a href="https://pypi.org/project/flakestorm/">
-    <img src="https://img.shields.io/pypi/pyversions/flakestorm.svg" alt="Python Versions">
+  <a href="https://github.com/flakestorm/flakestorm">
+    <img src="https://img.shields.io/github/stars/flakestorm/flakestorm?style=social" alt="GitHub Stars">
   </a>
 </p>
 
