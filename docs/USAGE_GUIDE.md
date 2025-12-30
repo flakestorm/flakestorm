@@ -16,9 +16,8 @@ This comprehensive guide walks you through using flakestorm to test your AI agen
 6. [Running Tests](#running-tests)
 7. [Understanding Results](#understanding-results)
 8. [Integration Patterns](#integration-patterns)
-9. [CI/CD Integration](#cicd-integration)
-10. [Advanced Usage](#advanced-usage)
-11. [Troubleshooting](#troubleshooting)
+9. [Advanced Usage](#advanced-usage)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -450,19 +449,6 @@ flakestorm run --quiet
 flakestorm run --verbose
 ```
 
-### CI/CD Mode
-
-```bash
-# Fail if score < 0.8
-flakestorm run --ci --min-score 0.8
-
-# Exit codes:
-# 0 = Score meets threshold
-# 1 = Score below threshold
-# 2 = Configuration error
-# 3 = Runtime error
-```
-
 ### Individual Commands
 
 ```bash
@@ -626,103 +612,6 @@ from langchain.agents import AgentExecutor
 
 # flakestorm will call agent.invoke({"input": prompt})
 agent = AgentExecutor(...)
-```
-
----
-
-## CI/CD Integration
-
-### GitHub Actions
-
-Create `.github/workflows/flakestorm.yml`:
-
-```yaml
-name: Agent Reliability Tests
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  reliability-test:
-    runs-on: ubuntu-latest
-
-    services:
-      ollama:
-        image: ollama/ollama
-        ports:
-          - 11434:11434
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install flakestorm
-          pip install -r requirements.txt
-
-      - name: Pull Ollama model
-        run: |
-          curl -X POST http://localhost:11434/api/pull \
-            -d '{"name": "qwen2.5-coder:7b"}'
-
-      - name: Start agent
-        run: |
-          python -m my_agent &
-          sleep 5  # Wait for startup
-
-      - name: Run flakestorm tests
-        run: |
-          flakestorm run --ci --min-score 0.8 --output json
-
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: flakestorm-report
-          path: reports/
-```
-
-### GitLab CI
-
-```yaml
-flakestorm-test:
-  image: python:3.11
-  services:
-    - name: ollama/ollama
-      alias: ollama
-  variables:
-    OLLAMA_HOST: "http://ollama:11434"
-  script:
-    - pip install flakestorm
-    - flakestorm run --ci --min-score 0.8
-  artifacts:
-    paths:
-      - reports/
-    when: always
-```
-
-### Pre-commit Hook
-
-Add to `.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: flakestorm
-        name: flakestorm Agent Tests
-        entry: flakestorm run --ci --min-score 0.8
-        language: system
-        pass_filenames: false
-        always_run: true
 ```
 
 ---

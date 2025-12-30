@@ -118,12 +118,12 @@ def run(
     min_score: float | None = typer.Option(
         None,
         "--min-score",
-        help="Minimum score to pass (for CI/CD)",
+        help="Minimum score to pass",
     ),
     ci: bool = typer.Option(
         False,
         "--ci",
-        help="CI mode: exit with error if below min-score",
+        help="Exit with error code if score is below min-score",
     ),
     verify_only: bool = typer.Option(
         False,

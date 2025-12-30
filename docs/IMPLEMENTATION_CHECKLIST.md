@@ -14,7 +14,6 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 - [x] Create flakestorm.yaml.example template
 - [x] Set up project structure (src/flakestorm/*)
 - [x] Configure pre-commit hooks (black, ruff, mypy)
-- [ ] Set up GitHub Actions for CI/CD
 
 #### Configuration System
 - [x] Define Pydantic models for configuration
@@ -122,12 +121,6 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 - [x] Implement similarity calculation
 - [x] Add lazy model loading
 
-#### GitHub Actions Integration
-- [x] Create action.yml template
-- [x] Create workflow example
-- [x] Document CI/CD integration
-- [ ] Publish to GitHub Marketplace
-
 ---
 
 ### Testing & Quality
@@ -155,114 +148,6 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 
 ---
 
-## Cloud Version (Commercial)
-
-### Cloud Phase 1: Infrastructure (Week 9-10)
-
-#### Cloud Setup
-- [ ] Set up AWS/GCP project
-- [ ] Configure VPC and networking
-- [ ] Set up PostgreSQL database
-- [ ] Configure Redis for queue/cache
-- [ ] Set up S3/GCS for storage
-- [ ] Configure Docker/Kubernetes
-
-#### Database Schema
-- [ ] Create users table
-- [ ] Create test_configs table
-- [ ] Create test_runs table
-- [ ] Create subscriptions table
-- [ ] Set up migrations (Alembic)
-
-#### Authentication
-- [ ] Integrate Auth0/Clerk
-- [ ] Implement JWT validation
-- [ ] Create user management endpoints
-- [ ] Add RBAC for team tier
-
----
-
-### Cloud Phase 2: Backend (Week 10-12)
-
-#### FastAPI Application
-- [ ] Set up FastAPI project structure
-- [ ] Implement auth middleware
-- [ ] Create test management endpoints
-- [ ] Create config management endpoints
-- [ ] Create report endpoints
-- [ ] Implement async job queue (Celery)
-
-#### Gemini Integration
-- [ ] Create GeminiMutationService
-- [ ] Implement mutation generation
-- [ ] Add fallback to GPU models
-- [ ] Rate limiting and retry logic
-
-#### Tier Limits
-- [ ] Implement free tier limits (5 lifetime runs)
-- [ ] Implement Pro tier limits (200/month)
-- [ ] Implement Team tier limits (1000/month)
-- [ ] Create usage tracking
-
----
-
-### Cloud Phase 3: Frontend (Week 12-14)
-
-#### Next.js Setup
-- [ ] Initialize Next.js project
-- [ ] Configure Tailwind CSS
-- [ ] Set up authentication flow
-- [ ] Create layout components
-
-#### Dashboard Pages
-- [ ] Dashboard home (overview)
-- [ ] Tests list and creation
-- [ ] Reports viewer
-- [ ] Billing management
-- [ ] Team management (Team tier)
-- [ ] Settings page
-
-#### Marketing Pages
-- [ ] Landing page
-- [ ] Pricing page
-- [ ] Documentation
-- [ ] Blog (optional)
-
----
-
-### Cloud Phase 4: Billing (Week 14-15)
-
-#### Stripe Integration
-- [ ] Set up Stripe products/prices
-- [ ] Implement subscription creation
-- [ ] Handle subscription updates
-- [ ] Implement webhook handlers
-- [ ] Create invoice history
-
-#### Email Notifications
-- [ ] Set up SendGrid/Mailgun
-- [ ] Test failure alerts
-- [ ] Subscription notifications
-- [ ] Welcome emails
-
----
-
-### Cloud Phase 5: Testing & Launch (Week 15-16)
-
-#### Testing
-- [ ] E2E tests with Cypress/Playwright
-- [ ] Load testing
-- [ ] Security audit
-- [ ] Performance optimization
-
-#### Deployment
-- [ ] Set up CI/CD pipeline
-- [ ] Configure production environment
-- [ ] Set up monitoring (Sentry, etc.)
-- [ ] Launch to production
-
----
-
 ## Progress Summary
 
 | Phase | Status | Completion |
@@ -273,10 +158,6 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 | CLI Phase 4: CLI & Reporting | ✅ Complete | 100% |
 | CLI Phase 5: V2 Features | ✅ Complete | 90% |
 | Documentation | ✅ Complete | 100% |
-| Cloud Phase 1: Infrastructure | ⏳ Pending | 0% |
-| Cloud Phase 2: Backend | ⏳ Pending | 0% |
-| Cloud Phase 3: Frontend | ⏳ Pending | 0% |
-| Cloud Phase 4: Billing | ⏳ Pending | 0% |
 
 ---
 
@@ -285,5 +166,4 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 1. **Rust Build**: Compile and integrate Rust performance module
 2. **Integration Tests**: Add full integration test suite
 3. **PyPI Release**: Prepare and publish to PyPI
-4. **Cloud Infrastructure**: Begin AWS/GCP setup
-5. **Community Launch**: Publish to Hacker News and Reddit
+4. **Community Launch**: Publish to Hacker News and Reddit

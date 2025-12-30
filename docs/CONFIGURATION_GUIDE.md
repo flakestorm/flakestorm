@@ -436,38 +436,6 @@ advanced:
 
 ---
 
-## CI/CD Configuration
-
-For GitHub Actions:
-
-```yaml
-# .github/workflows/reliability.yml
-name: Agent Reliability
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Ollama
-        run: |
-          curl -fsSL https://ollama.ai/install.sh | sh
-          ollama serve &
-          sleep 5
-          ollama pull qwen3:8b
-
-      - name: Install flakestorm
-        run: pip install flakestorm
-
-      - name: Run Tests
-        run: flakestorm run --min-score 0.9 --ci
-```
-
----
-
 ## Troubleshooting
 
 ### Common Issues

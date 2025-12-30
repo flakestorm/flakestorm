@@ -680,15 +680,7 @@ open reports/entropix_report_*.html
 # ...
 
 # Re-run tests
-flakestorm run --ci --min-score 0.9
-```
-
-### Step 6: Add to CI/CD
-
-```yaml
-# .github/workflows/test.yml
-- name: Run flakestorm
-  run: flakestorm run --ci --min-score 0.85
+flakestorm run --min-score 0.9
 ```
 
 ---

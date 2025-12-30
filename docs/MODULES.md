@@ -61,8 +61,7 @@ flakestorm/
 │   └── main.py             # Typer CLI commands
 └── integrations/            # External integrations
     ├── huggingface.py      # HuggingFace model support
-    ├── embeddings.py       # Local embeddings
-    └── github_actions.py   # CI/CD integration
+    └── embeddings.py       # Local embeddings
 ```
 
 ---

@@ -192,12 +192,15 @@ agent:
   module: "my_agent:chain"
 ```
 
-## CI/CD Integration
+## Local Testing
 
-For local testing:
+For local testing and validation:
 ```bash
-# Run before committing (manual)
+# Run with minimum score check
 flakestorm run --min-score 0.9
+
+# Exit with error code if score is too low
+flakestorm run --min-score 0.9 --ci
 ```
 
 ## Robustness Score
