@@ -18,13 +18,20 @@ Please be respectful and constructive in all interactions. We welcome contributo
 
 2. **Set up Python environment**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   # Create virtual environment first
+   # 1. Verify Python version (3.10+ required)
+   python3 --version
+
+   # 2. Create virtual environment
    python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-   # Then install in editable mode
+   # 3. Upgrade pip (required for pyproject.toml editable installs)
+   pip install --upgrade pip
+
+   # 4. Verify pip version (should be 21.0+)
+   pip --version
+
+   # 5. Install in editable mode
    pip install -e ".[dev]"
    ```
 
@@ -61,7 +68,23 @@ Please be respectful and constructive in all interactions. We welcome contributo
 
 5. **Install pre-commit hooks**
    ```bash
+   # Make sure venv is activated first!
+   source venv/bin/activate  # If not already activated
+
+   # Verify pre-commit is installed
+   which pre-commit  # Should show: .../venv/bin/pre-commit
+
+   # Install git hooks (this will update .git/hooks/pre-commit)
    pre-commit install
+
+   # Verify hooks are installed
+   pre-commit run --all-files  # Optional: test all files
+   ```
+
+   **Note:** If you get `pre-commit not found` when committing, the hooks need to be reinstalled:
+   ```bash
+   source venv/bin/activate
+   pre-commit install --overwrite
    ```
 
 ### Running Tests

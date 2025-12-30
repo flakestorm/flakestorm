@@ -86,9 +86,23 @@ flakestorm is an **adversarial testing framework** for AI agents. It applies cha
 
 ### Prerequisites
 
-- **Python 3.10+** (3.11 recommended)
+- **Python 3.10+** (3.11 recommended) - **Required!** Python 3.9 or lower will not work.
 - **Ollama** (for local LLM mutation generation)
 - **Rust** (optional, for performance optimization)
+
+**Check your Python version:**
+```bash
+python3 --version  # Must show 3.10 or higher
+```
+
+If you have Python 3.9 or lower, upgrade first:
+```bash
+# macOS
+brew install python@3.11
+
+# Then use the new Python
+python3.11 --version
+```
 
 ### Installation Order
 
@@ -157,15 +171,84 @@ sudo pacman -S ollama
 After installation, start Ollama:
 
 ```bash
-# macOS/Linux - Start the service
+# macOS (Homebrew) - Start as a service (recommended)
+brew services start ollama
+
+# macOS (Manual install) / Linux - Start the service
 ollama serve
 
 # Windows - Ollama runs as a service automatically after installation
-# You can also start it manually from the Start menu or run:
-ollama serve
+# You can also start it manually from the Start menu
+```
+
+**Important for macOS Homebrew users:**
+
+If you see syntax errors when running `ollama` commands (like `ollama pull` or `ollama serve`), you likely have a bad binary from a previous failed download. Fix it:
+
+```bash
+# 1. Remove the bad binary
+sudo rm /usr/local/bin/ollama
+
+# 2. Verify Homebrew's Ollama is installed
+brew list ollama
+
+# 3. Find where Homebrew installed Ollama
+brew --prefix ollama  # Usually /usr/local/opt/ollama or /opt/homebrew/opt/ollama
+
+# 4. Create a symlink to make ollama available in PATH
+# For Intel Mac:
+sudo ln -s /usr/local/opt/ollama/bin/ollama /usr/local/bin/ollama
+
+# For Apple Silicon:
+sudo ln -s /opt/homebrew/opt/ollama/bin/ollama /opt/homebrew/bin/ollama
+# And ensure /opt/homebrew/bin is in PATH:
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 5. Verify it works
+which ollama
+ollama --version
+
+# 6. Start Ollama service
+brew services start ollama
+
+# 7. Now ollama commands should work
+ollama pull qwen2.5-coder:7b
+```
+
+**Alternative:** If symlinks don't work, you can use the full path temporarily:
+```bash
+/usr/local/opt/ollama/bin/ollama pull qwen2.5-coder:7b
+# Or for Apple Silicon:
+/opt/homebrew/opt/ollama/bin/ollama pull qwen2.5-coder:7b
 ```
 
 ### Step 2: Pull the Default Model
+
+**Important:** If you get `syntax error: <!doctype html>` or `command not found` when running `ollama pull`, you have a bad binary from a previous failed download. Fix it:
+
+```bash
+# 1. Remove the bad binary
+sudo rm /usr/local/bin/ollama
+
+# 2. Find Homebrew's Ollama location
+brew --prefix ollama  # Shows /usr/local/opt/ollama or /opt/homebrew/opt/ollama
+
+# 3. Create symlink to make it available
+# For Intel Mac:
+sudo ln -s /usr/local/opt/ollama/bin/ollama /usr/local/bin/ollama
+
+# For Apple Silicon:
+sudo ln -s /opt/homebrew/opt/ollama/bin/ollama /opt/homebrew/bin/ollama
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 4. Verify it works
+which ollama
+ollama --version
+```
+
+**Then pull the model:**
 
 ```bash
 # Pull Qwen Coder 3 8B (recommended for mutations)
@@ -177,19 +260,72 @@ ollama run qwen2.5-coder:7b "Hello, world!"
 
 ### Step 3: Create Virtual Environment and Install flakestorm
 
-**Important:** On macOS (and some Linux distributions), Python environments are externally managed. You must use a virtual environment:
+**CRITICAL: Python 3.10+ Required!**
+
+flakestorm requires Python 3.10 or higher. If your system Python is 3.9 or lower, you must install a newer version first.
+
+**Check your Python version:**
+```bash
+python3 --version  # Must show 3.10, 3.11, 3.12, or higher
+```
+
+**If you have Python 3.9 or lower, install Python 3.11 first:**
 
 ```bash
-# Create a virtual environment (do this AFTER installing Ollama)
+# macOS - Install Python 3.11 via Homebrew
+brew install python@3.11
+
+# Verify it's installed
+python3.11 --version  # Should show 3.11.x
+
+# Linux - Install Python 3.11
+# Ubuntu/Debian:
+sudo apt update
+sudo apt install python3.11 python3.11-venv
+
+# Fedora/RHEL:
+sudo dnf install python3.11
+```
+
+**Create virtual environment with Python 3.10+:**
+
+```bash
+# 1. DEACTIVATE current venv if active (important!)
+deactivate
+
+# 2. Remove any existing venv (if it was created with old Python)
+rm -rf venv
+
+# 3. Create venv with Python 3.10+ (use the version you have)
+# If you have python3.11 (recommended):
+python3.11 -m venv venv
+
+# If you have python3.10:
+python3.10 -m venv venv
+
+# If python3 is already 3.10+:
 python3 -m venv venv
 
-# Activate it (macOS/Linux)
+# 4. Activate it (macOS/Linux)
 source venv/bin/activate
 
 # Activate it (Windows)
 # venv\Scripts\activate
 
-# Now install flakestorm
+# 5. CRITICAL: Verify Python version in venv (MUST be 3.10+)
+python --version  # Should show 3.10.x, 3.11.x, or 3.12.x
+# If it still shows 3.9.x, the venv creation failed - try step 3 again with explicit path
+
+# 6. Also verify which Python is being used
+which python  # Should point to venv/bin/python
+
+# 7. Upgrade pip to latest version (required for pyproject.toml support)
+pip install --upgrade pip
+
+# 8. Verify pip version (should be 21.0+)
+pip --version
+
+# 9. Now install flakestorm
 # From PyPI (when published)
 pip install flakestorm
 
@@ -224,11 +360,26 @@ python3 --version  # Should be 3.10 or higher
 For 80x+ performance improvement on scoring:
 
 ```bash
-cd rust
-# Make sure virtual environment is activated
+# 1. CRITICAL: Make sure virtual environment is activated
+source venv/bin/activate  # If not already activated
+which pip  # Should show: .../venv/bin/pip
+pip --version  # Should show pip 21.0+ with Python 3.10+
+
+# 2. Install maturin (Rust/Python build tool)
 pip install maturin
+
+# 3. Build the Rust extension
+cd rust
 maturin build --release
-pip install ../target/wheels/*.whl
+
+# 4. Remove any old wheels (if they exist)
+rm -f ../target/wheels/entropix_rust-*.whl  # Remove old wheels with wrong name
+
+# 5. Install the new wheel (use specific pattern to avoid old wheels)
+pip install ../target/wheels/flakestorm_rust-*.whl
+
+# 6. Verify installation
+python -c "import flakestorm_rust; print('Rust extension installed successfully!')"
 ```
 
 ### Verify Installation
@@ -783,7 +934,14 @@ advanced:
 curl http://localhost:11434/api/version
 
 # Start Ollama if not running
+# macOS (Homebrew):
+brew services start ollama
+
+# macOS (Manual) / Linux:
 ollama serve
+
+# Check status (Homebrew):
+brew services list | grep ollama
 ```
 
 #### "Model not found"
@@ -838,15 +996,165 @@ brew install ollama
 # Or use the official installer from https://ollama.ai/download instead
 ```
 
+#### "Package requires a different Python: 3.9.6 not in '>=3.10'"
+
+**This error means your virtual environment is using Python 3.9 or lower, but flakestorm requires Python 3.10+.**
+
+**Even if you installed Python 3.11, your venv might still be using the old Python!**
+
+**Fix it:**
+
+```bash
+# 1. DEACTIVATE current venv (critical!)
+deactivate
+
+# 2. Remove the old venv completely
+rm -rf venv
+
+# 3. Verify Python 3.11 is installed and find its path
+python3.11 --version  # Should work
+which python3.11  # Shows: /usr/local/bin/python3.11
+
+# 4. Create new venv with Python 3.11 EXPLICITLY
+/usr/local/bin/python3.11 -m venv venv
+# Or simply:
+python3.11 -m venv venv
+
+# 5. Activate it
+source venv/bin/activate
+
+# 6. CRITICAL: Verify Python version in venv (MUST be 3.11.x, NOT 3.9.x)
+python --version  # Should show 3.11.x
+which python  # Should show: .../venv/bin/python
+
+# 7. If it still shows 3.9.x, the venv is broken - remove and recreate:
+# deactivate
+# rm -rf venv
+# /usr/local/bin/python3.11 -m venv venv
+# source venv/bin/activate
+# python --version  # Verify again
+
+# 8. Upgrade pip
+pip install --upgrade pip
+
+# 9. Now install
+pip install -e ".[dev]"
+```
+
+**Common mistake:** Creating venv with `python3 -m venv venv` when `python3` points to 3.9. Always use `python3.11 -m venv venv` explicitly!
+
+#### "Virtual environment errors: bad interpreter or setup.py not found"
+
+If you get errors like `bad interpreter` or `setup.py not found` when installing:
+
+**Issue 1: Python version too old**
+```bash
+# Check your Python version
+python3 --version  # Must be 3.10 or higher
+
+# If you have Python 3.9 or lower, you need to upgrade
+# macOS: Install Python 3.10+ via Homebrew
+brew install python@3.11
+
+# Then create venv with the new Python
+python3.11 -m venv venv
+source venv/bin/activate
+```
+
+**Issue 2: Pip too old for pyproject.toml**
+```bash
+# Remove broken venv
+rm -rf venv
+
+# Recreate venv with Python 3.10+
+python3.11 -m venv venv  # Or python3.10, python3.12
+source venv/bin/activate
+
+# Upgrade pip FIRST (critical!)
+pip install --upgrade pip
+
+# Verify pip version (should be 21.0+)
+pip --version
+
+# Now install
+pip install -e ".[dev]"
+```
+
+**Issue 3: Venv created with wrong Python**
+```bash
+# Remove broken venv
+rm -rf venv
+
+# Use explicit Python 3.10+ path
+python3.11 -m venv venv  # Or: python3.10, python3.12
+source venv/bin/activate
+
+# Verify Python version
+python --version  # Must be 3.10+
+
+# Upgrade pip
+pip install --upgrade pip
+
+# Install
+pip install -e ".[dev]"
+```
+
 #### "Ollama binary contains HTML or syntax errors"
 
-If you downloaded a file that contains HTML instead of the binary:
+If you see `syntax error: <!doctype html>` when running ANY `ollama` command (`ollama serve`, `ollama pull`, etc.):
 
-1. **macOS:** Use Homebrew or download the official `.dmg` installer from https://ollama.ai/download
-2. **Windows:** Download `OllamaSetup.exe` from https://ollama.com/download/windows
-3. **Linux:** Use the official install script: `curl -fsSL https://ollama.com/install.sh | sh`
+**This happens when a bad binary from a previous failed download is in your PATH.**
 
-Never download binaries directly via curl from the download page - always use the official installers or package managers.
+**Fix it:**
+
+```bash
+# 1. Remove the bad binary
+sudo rm /usr/local/bin/ollama
+
+# 2. Find where Homebrew installed Ollama
+brew --prefix ollama
+# This shows: /usr/local/opt/ollama (Intel) or /opt/homebrew/opt/ollama (Apple Silicon)
+
+# 3. Create a symlink to make ollama available in PATH
+# For Intel Mac:
+sudo ln -s /usr/local/opt/ollama/bin/ollama /usr/local/bin/ollama
+
+# For Apple Silicon:
+sudo ln -s /opt/homebrew/opt/ollama/bin/ollama /opt/homebrew/bin/ollama
+# Ensure /opt/homebrew/bin is in PATH:
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 4. Verify the command works now
+which ollama
+ollama --version
+
+# 5. Start Ollama service
+brew services start ollama
+
+# 6. Now pull the model
+ollama pull qwen2.5-coder:7b
+```
+
+**Alternative:** If you can't create symlinks, use the full path:
+```bash
+# Intel Mac:
+/usr/local/opt/ollama/bin/ollama pull qwen2.5-coder:7b
+
+# Apple Silicon:
+/opt/homebrew/opt/ollama/bin/ollama pull qwen2.5-coder:7b
+```
+
+**If Homebrew's Ollama is not installed:**
+
+```bash
+# Install via Homebrew
+brew install ollama
+
+# Or download the official .dmg installer from https://ollama.ai/download
+```
+
+**Important:** Never download binaries directly via curl from the download page - always use the official installers or package managers.
 
 ### Debug Mode
 

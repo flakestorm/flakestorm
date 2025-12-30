@@ -93,10 +93,36 @@ sudo apt install ollama
 **After installation, start Ollama and pull the model:**
 
 ```bash
-# Start Ollama (macOS/Linux - Windows starts automatically)
-ollama serve
+# Start Ollama
+# macOS (Homebrew): brew services start ollama
+# macOS (Manual) / Linux: ollama serve
+# Windows: Starts automatically as a service
 
 # In another terminal, pull the model
+ollama pull qwen3:8b
+```
+
+**Troubleshooting:** If you get `syntax error: <!doctype html>` or `command not found` when running `ollama` commands:
+
+```bash
+# 1. Remove the bad binary
+sudo rm /usr/local/bin/ollama
+
+# 2. Find Homebrew's Ollama location
+brew --prefix ollama  # Shows /usr/local/opt/ollama or /opt/homebrew/opt/ollama
+
+# 3. Create symlink to make it available
+# Intel Mac:
+sudo ln -s /usr/local/opt/ollama/bin/ollama /usr/local/bin/ollama
+
+# Apple Silicon:
+sudo ln -s /opt/homebrew/opt/ollama/bin/ollama /opt/homebrew/bin/ollama
+echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+# 4. Verify and use
+which ollama
+brew services start ollama
 ollama pull qwen3:8b
 ```
 
@@ -105,13 +131,44 @@ ollama pull qwen3:8b
 **Using a virtual environment (recommended):**
 
 ```bash
-# Create and activate virtual environment
-python3 -m venv venv
+# 1. Check if Python 3.11 is installed
+python3.11 --version  # Should work if installed via Homebrew
+
+# If not installed:
+# macOS: brew install python@3.11
+# Linux: sudo apt install python3.11 (Ubuntu/Debian)
+
+# 2. DEACTIVATE any existing venv first (if active)
+deactivate  # Run this if you see (venv) in your prompt
+
+# 3. Remove old venv if it exists (created with Python 3.9)
+rm -rf venv
+
+# 4. Create venv with Python 3.11 EXPLICITLY
+python3.11 -m venv venv
+# Or use full path: /usr/local/bin/python3.11 -m venv venv
+
+# 5. Activate it
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install flakestorm
+# 6. CRITICAL: Verify Python version in venv (MUST be 3.11.x, NOT 3.9.x)
+python --version  # Should show 3.11.x
+which python  # Should point to venv/bin/python
+
+# 7. If it still shows 3.9.x, the venv creation failed - remove and recreate:
+# deactivate && rm -rf venv && python3.11 -m venv venv && source venv/bin/activate
+
+# 8. Upgrade pip (required for pyproject.toml support)
+pip install --upgrade pip
+
+# 9. Install flakestorm
 pip install flakestorm
 ```
+
+**Troubleshooting:** If you get `Package requires a different Python: 3.9.6 not in '>=3.10'`:
+- Your venv is still using Python 3.9 even though Python 3.11 is installed
+- **Solution:** `deactivate && rm -rf venv && python3.11 -m venv venv && source venv/bin/activate && python --version`
+- Always verify with `python --version` after activating venv - it MUST show 3.10+
 
 **Or using pipx (for CLI use only):**
 
@@ -291,7 +348,7 @@ Where:
 
 ## License
 
-AGPLv3 - See [LICENSE](LICENSE) for details.
+Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 ---
 

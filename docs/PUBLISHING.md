@@ -278,7 +278,8 @@ cd rust/
 # Build wheels for your current platform
 maturin build --release
 
-# The wheel would be in: ../target/wheels/flakestorm_rust-0.1.0-cp39-*.whl
+# The wheel would be in: ../target/wheels/flakestorm_rust-0.1.0-cp311-*.whl
+# (or cp310, cp312 depending on Python version used)
 ```
 
 ### Multi-Platform Publishing with GitHub Actions
