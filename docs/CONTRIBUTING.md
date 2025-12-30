@@ -53,7 +53,7 @@ pytest --cov=src/flakestorm --cov-report=html
 pytest tests/test_config.py
 
 # Run specific test
-pytest tests/test_config.py::TestEntropixConfig::test_create_default_config
+pytest tests/test_config.py::TestFlakeStormConfig::test_create_default_config
 ```
 
 ### Code Style

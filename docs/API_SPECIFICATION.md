@@ -6,11 +6,11 @@
 
 ```python
 import asyncio
-from flakestorm import flakestormRunner, load_config
+from flakestorm import FlakeStormRunner, load_config
 
 async def main():
     config = load_config("flakestorm.yaml")
-    runner = EntropixRunner(config)
+    runner = FlakeStormRunner(config)
     results = await runner.run()
     print(f"Robustness Score: {results.statistics.robustness_score:.1%}")
 
@@ -21,12 +21,12 @@ asyncio.run(main())
 
 ## Core Classes
 
-### EntropixConfig
+### FlakeStormConfig
 
 Configuration container for all flakestorm settings.
 
 ```python
-from flakestorm import flakestormConfig, load_config
+from flakestorm import FlakeStormConfig, load_config
 
 # Load from file
 config = load_config("flakestorm.yaml")
@@ -41,7 +41,7 @@ config.invariants      # list[InvariantConfig]
 yaml_str = config.to_yaml()
 
 # Parse from string
-config = EntropixConfig.from_yaml(yaml_content)
+config = FlakeStormConfig.from_yaml(yaml_content)
 ```
 
 #### Properties
@@ -59,15 +59,15 @@ config = EntropixConfig.from_yaml(yaml_content)
 
 ---
 
-### EntropixRunner
+### FlakeStormRunner
 
 Main test runner class.
 
 ```python
-from flakestorm import flakestormRunner
+from flakestorm import FlakeStormRunner
 
-runner = EntropixRunner(
-    config="flakestorm.yaml",  # or EntropixConfig object
+runner = FlakeStormRunner(
+    config="flakestorm.yaml",  # or FlakeStormConfig object
     agent=None,              # optional: pre-configured adapter
     console=None,            # optional: Rich console
     show_progress=True,      # show progress bars
@@ -434,7 +434,6 @@ fi
 
 | Variable | Description |
 |----------|-------------|
-| `ENTROPIX_CONFIG` | Default config file path |
 | `OLLAMA_HOST` | Override Ollama server URL |
 | Custom headers | Expanded in config via `${VAR}` syntax |
 

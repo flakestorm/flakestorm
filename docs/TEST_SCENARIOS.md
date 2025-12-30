@@ -674,7 +674,7 @@ invariants:
 flakestorm run --output html
 
 # Review report
-open reports/entropix_report_*.html
+open reports/flakestorm-*.html
 
 # Fix issues in your agent
 # ...

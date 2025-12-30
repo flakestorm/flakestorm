@@ -308,8 +308,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
 
-from flakestorm.core.orchestrator import flakestormOrchestrator, OrchestratorState
-from flakestorm.core.config import flakestormConfig, AgentConfig, MutationConfig
+from flakestorm.core.orchestrator import Orchestrator, OrchestratorState
+from flakestorm.core.config import FlakeStormConfig, AgentConfig, MutationConfig
 from flakestorm.mutations.types import Mutation, MutationType
 from flakestorm.assertions.verifier import CheckResult
 
@@ -332,13 +332,13 @@ class TestOrchestratorState:
         assert state.completed_mutations == 5
 
 
-class TestEntropixOrchestrator:
+class TestOrchestrator:
     """Tests for main orchestrator."""
 
     @pytest.fixture
     def mock_config(self):
         """Create a minimal test config."""
-        return EntropixConfig(
+        return FlakeStormConfig(
             agent=AgentConfig(
                 endpoint="http://localhost:8000/chat",
                 type="http",
@@ -388,7 +388,7 @@ class TestEntropixOrchestrator:
         self, mock_config, mock_agent, mock_mutation_engine, mock_verifier
     ):
         """Orchestrator generates mutations for all golden prompts."""
-        orchestrator = EntropixOrchestrator(
+        orchestrator = Orchestrator(
             config=mock_config,
             agent=mock_agent,
             mutation_engine=mock_mutation_engine,
@@ -405,7 +405,7 @@ class TestEntropixOrchestrator:
         self, mock_config, mock_agent, mock_mutation_engine, mock_verifier
     ):
         """Orchestrator invokes agent for each mutation."""
-        orchestrator = EntropixOrchestrator(
+        orchestrator = Orchestrator(
             config=mock_config,
             agent=mock_agent,
             mutation_engine=mock_mutation_engine,
@@ -423,7 +423,7 @@ class TestEntropixOrchestrator:
         self, mock_config, mock_agent, mock_mutation_engine, mock_verifier
     ):
         """Orchestrator returns complete test results."""
-        orchestrator = EntropixOrchestrator(
+        orchestrator = Orchestrator(
             config=mock_config,
             agent=mock_agent,
             mutation_engine=mock_mutation_engine,
@@ -444,7 +444,7 @@ class TestEntropixOrchestrator:
         failing_agent = AsyncMock()
         failing_agent.invoke.side_effect = Exception("Agent error")
 
-        orchestrator = EntropixOrchestrator(
+        orchestrator = Orchestrator(
             config=mock_config,
             agent=failing_agent,
             mutation_engine=mock_mutation_engine,

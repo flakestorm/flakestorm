@@ -120,10 +120,10 @@ flakestorm/
 
 __version__ = "0.1.0"
 
-from flakestorm.core.config import load_config, EntropixConfig
-from flakestorm.core.runner import flakestormRunner
+from flakestorm.core.config import load_config, FlakeStormConfig
+from flakestorm.core.runner import FlakeStormRunner
 
-__all__ = ["load_config", "EntropixConfig", "EntropixRunner", "__version__"]
+__all__ = ["load_config", "FlakeStormConfig", "FlakeStormRunner", "__version__"]
 ```
 
 ---
@@ -268,7 +268,7 @@ jobs:
 
 ## Publishing the Rust Extension
 
-The Rust extension (`entropix_rust`) is published separately because it requires platform-specific binaries.
+The Rust extension (if implemented) would be published separately because it requires platform-specific binaries.
 
 ### Using `maturin`
 
@@ -278,7 +278,7 @@ cd rust/
 # Build wheels for your current platform
 maturin build --release
 
-# The wheel is in: ../target/wheels/entropix_rust-0.1.0-cp39-*.whl
+# The wheel would be in: ../target/wheels/flakestorm_rust-0.1.0-cp39-*.whl
 ```
 
 ### Multi-Platform Publishing with GitHub Actions

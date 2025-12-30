@@ -67,7 +67,7 @@ async def _run_single_mutation(self, mutation):
 
 **A:** They serve different purposes:
 
-- **`runner.py`**: High-level API for users - simple `EntropixRunner.run()` interface
+- **`runner.py`**: High-level API for users - simple `FlakeStormRunner.run()` interface
 - **`orchestrator.py`**: Internal coordination logic - handles the complex flow
 
 This separation allows:
@@ -359,7 +359,7 @@ fn levenshtein_distance(s1: &str, s2: &str) -> usize {
 }
 
 #[pymodule]
-fn entropix_rust(m: &PyModule) -> PyResult<()> {
+fn flakestorm_rust(m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(levenshtein_distance, m)?)?;
     Ok(())
 }
@@ -375,7 +375,7 @@ except ImportError:
 
 def levenshtein_distance(s1: str, s2: str) -> int:
     if _RUST_AVAILABLE:
-        return entropix_rust.levenshtein_distance(s1, s2)
+        return flakestorm_rust.levenshtein_distance(s1, s2)
     # Pure Python fallback
     ...
 ```

@@ -198,7 +198,7 @@ flakestorm run --ci --min-score 0.8
 
 ```bash
 # Open the generated report
-open reports/entropix_report_*.html
+open reports/flakestorm-*.html
 ```
 
 ---
@@ -734,7 +734,7 @@ agent:
 flakestorm run --verbose
 
 # Or set environment variable
-export ENTROPIX_DEBUG=1
+export FLAKESTORM_DEBUG=1
 flakestorm run
 ```
 

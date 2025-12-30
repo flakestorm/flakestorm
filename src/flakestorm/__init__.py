@@ -5,7 +5,7 @@ Chaos Engineering for AI Agents. Apply adversarial fuzzing to prove
 your agents are production-ready before deployment.
 
 Example:
-    >>> from flakestorm import flakestormRunner, load_config
+    >>> from flakestorm import FlakeStormRunner, load_config
     >>> config = load_config("flakestorm.yaml")
     >>> runner = FlakeStormRunner(config)
     >>> results = await runner.run()

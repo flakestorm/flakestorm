@@ -65,7 +65,7 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 ### Phase 3: Runner & Assertions (Week 3-4)
 
 #### Async Runner
-- [x] Create EntropixRunner class
+- [x] Create FlakeStormRunner class
 - [x] Implement orchestrator logic
 - [x] Add concurrency control with semaphores
 - [x] Implement progress tracking

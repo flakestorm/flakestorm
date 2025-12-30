@@ -88,13 +88,14 @@ class AgentConfig(BaseModel):
 ```
 
 ```python
-class EntropixConfig(BaseModel):
+class FlakeStormConfig(BaseModel):
     """Root configuration model."""
     agent: AgentConfig
     golden_prompts: list[str]
     mutations: MutationConfig
-    llm: LLMConfig
+    model: ModelConfig
     invariants: list[InvariantConfig]
+    output: OutputConfig
     advanced: AdvancedConfig
 ```
 
@@ -194,13 +195,13 @@ The adapter pattern was chosen because:
 **Key Components:**
 
 ```python
-class EntropixOrchestrator:
+class Orchestrator:
     """Main orchestration class."""
 
     async def run(self) -> TestResults:
         """Execute the full test suite."""
         # 1. Generate mutations for all golden prompts
-        # 2. Run mutations in parallel with semaphore
+        # 2. Run mutations sequentially (open-source version)
         # 3. Verify responses against invariants
         # 4. Aggregate and score results
         # 5. Return comprehensive results
@@ -573,7 +574,7 @@ class MutationResult:
 @dataclass
 class TestResults:
     """Complete test run results."""
-    config: EntropixConfig
+    config: FlakeStormConfig
     mutations: list[MutationResult]
     statistics: TestStatistics
     timestamp: datetime
