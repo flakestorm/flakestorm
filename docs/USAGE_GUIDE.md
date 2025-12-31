@@ -455,22 +455,279 @@ open reports/flakestorm-*.html
 
 **What they are:** Carefully crafted prompts that represent your agent's core use cases. These are prompts that *should always work correctly*.
 
-**How to choose them:**
-- Cover all major user intents
-- Include edge cases you've seen in production
-- Represent different complexity levels
+#### Understanding Golden Prompts vs System Prompts
 
+**Key Distinction:**
+- **System Prompt**: Instructions that define your agent's role and behavior (stays in your code)
+- **Golden Prompt**: Example user inputs that should work correctly (what FlakeStorm mutates and tests)
+
+**Example:**
+```javascript
+// System Prompt (in your agent code - NOT in flakestorm.yaml)
+const systemPrompt = `You are a helpful assistant that books flights...`;
+
+// Golden Prompts (in flakestorm.yaml - what FlakeStorm tests)
+golden_prompts:
+  - "Book a flight from NYC to LA"
+  - "I need to fly to Paris next Monday"
+```
+
+FlakeStorm takes your golden prompts, mutates them (adds typos, paraphrases, etc.), and sends them to your agent. Your agent processes them using its system prompt.
+
+#### How to Choose Golden Prompts
+
+**1. Cover All Major User Intents**
+```yaml
+golden_prompts:
+  # Primary use case
+  - "Book a flight from New York to Los Angeles"
+
+  # Secondary use case
+  - "What's my account balance?"
+
+  # Another feature
+  - "Cancel my reservation #12345"
+```
+
+**2. Include Different Complexity Levels**
 ```yaml
 golden_prompts:
   # Simple intent
   - "Hello, how are you?"
 
-  # Complex intent with parameters
-  - "Book a flight from New York to Los Angeles departing March 15th"
+  # Medium complexity
+  - "Book a flight to Paris"
 
-  # Edge case
-  - "What if I need to cancel my booking?"
+  # Complex with multiple parameters
+  - "Book a flight from New York to Los Angeles departing March 15th, returning March 22nd, economy class, window seat"
 ```
+
+**3. Include Edge Cases**
+```yaml
+golden_prompts:
+  # Normal case
+  - "Book a flight to Paris"
+
+  # Edge case: unusual request
+  - "What if I need to cancel my booking?"
+
+  # Edge case: minimal input
+  - "Paris"
+
+  # Edge case: ambiguous request
+  - "I need to travel somewhere warm"
+```
+
+#### Examples by Agent Type
+
+**1. Simple Chat Agent**
+```yaml
+golden_prompts:
+  - "What is the weather in New York?"
+  - "Tell me a joke"
+  - "How do I make a paper airplane?"
+  - "What's 2 + 2?"
+```
+
+**2. E-commerce Assistant**
+```yaml
+golden_prompts:
+  - "I'm looking for a red dress size medium"
+  - "Show me running shoes under $100"
+  - "What's the return policy?"
+  - "Add this to my cart"
+  - "Track my order #ABC123"
+```
+
+**3. Structured Input Agent (Reddit Search Query Generator)**
+
+For agents that accept structured input (like a Reddit community discovery assistant):
+
+```yaml
+golden_prompts:
+  # B2C SaaS example
+  - |
+    Industry: Fitness tech
+    Product/Service: AI personal trainer app
+    Business Model: B2C
+    Target Market: fitness enthusiasts, people who want to lose weight
+    Description: An app that provides personalized workout plans using AI
+
+  # B2B SaaS example
+  - |
+    Industry: Marketing tech
+    Product/Service: Email automation platform
+    Business Model: B2B SaaS
+    Target Market: small business owners, marketing teams
+    Description: Automated email campaigns for small businesses
+
+  # Marketplace example
+  - |
+    Industry: E-commerce
+    Product/Service: Handmade crafts marketplace
+    Business Model: Marketplace
+    Target Market: crafters, DIY enthusiasts, gift buyers
+    Description: Platform connecting artisans with buyers
+
+  # Edge case - minimal description
+  - |
+    Industry: Healthcare tech
+    Product/Service: Telemedicine platform
+    Business Model: B2C
+    Target Market: busy professionals
+    Description: Video consultations
+```
+
+**4. API/Function-Calling Agent**
+```yaml
+golden_prompts:
+  - "Get the weather for San Francisco"
+  - "Send an email to john@example.com with subject 'Meeting'"
+  - "Create a calendar event for tomorrow at 3pm"
+  - "What's my schedule for next week?"
+```
+
+**5. Code Generation Agent**
+```yaml
+golden_prompts:
+  - "Write a Python function to sort a list"
+  - "Create a React component for a login form"
+  - "How do I connect to a PostgreSQL database in Node.js?"
+  - "Fix this bug: [code snippet]"
+```
+
+#### Best Practices
+
+**1. Start Small, Then Expand**
+```yaml
+# Phase 1: Start with 2-3 core prompts
+golden_prompts:
+  - "Primary use case 1"
+  - "Primary use case 2"
+
+# Phase 2: Add more as you validate
+golden_prompts:
+  - "Primary use case 1"
+  - "Primary use case 2"
+  - "Secondary use case"
+  - "Edge case 1"
+  - "Edge case 2"
+```
+
+**2. Cover Different User Personas**
+```yaml
+golden_prompts:
+  # Professional user
+  - "I need to schedule a meeting with the team for Q4 planning"
+
+  # Casual user
+  - "hey can u help me book something"
+
+  # Technical user
+  - "Query the database for all users created after 2024-01-01"
+
+  # Non-technical user
+  - "Show me my account"
+```
+
+**3. Include Real Production Examples**
+```yaml
+golden_prompts:
+  # From your production logs
+  - "Actual user query from logs"
+  - "Another real example"
+  - "Edge case that caused issues before"
+```
+
+**4. Test Different Input Formats**
+```yaml
+golden_prompts:
+  # Well-formatted
+  - "Book a flight from New York to Los Angeles on March 15th"
+
+  # Informal
+  - "need a flight nyc to la march 15"
+
+  # With extra context
+  - "Hi! I'm planning a trip and I need to book a flight from New York City to Los Angeles on March 15th, 2024. Can you help?"
+```
+
+**5. For Structured Input: Cover All Variations**
+```yaml
+golden_prompts:
+  # Complete input
+  - |
+    Industry: Tech
+    Product: SaaS platform
+    Model: B2B
+    Market: Enterprises
+    Description: Full description here
+
+  # Minimal input (edge case)
+  - |
+    Industry: Tech
+    Product: Platform
+
+  # Different business models
+  - |
+    Industry: Retail
+    Product: E-commerce site
+    Model: B2C
+    Market: Consumers
+```
+
+#### Common Patterns
+
+**Pattern 1: Question-Answer Agent**
+```yaml
+golden_prompts:
+  - "What is X?"
+  - "How do I Y?"
+  - "Why does Z happen?"
+  - "When should I do A?"
+```
+
+**Pattern 2: Task-Oriented Agent**
+```yaml
+golden_prompts:
+  - "Do X" (imperative)
+  - "I need to do X" (declarative)
+  - "Can you help me with X?" (question form)
+  - "X please" (polite request)
+```
+
+**Pattern 3: Multi-Turn Context Agent**
+```yaml
+golden_prompts:
+  # First turn
+  - "I'm looking for a hotel"
+  # Second turn (test separately)
+  - "In Paris"
+  # Third turn (test separately)
+  - "Under $200 per night"
+```
+
+**Pattern 4: Data Processing Agent**
+```yaml
+golden_prompts:
+  - "Analyze this data: [data]"
+  - "Summarize the following: [text]"
+  - "Extract key information from: [content]"
+```
+
+#### What NOT to Include
+
+❌ **Don't include:**
+- Prompts that are known to fail (those are edge cases to test, not golden prompts)
+- System prompts or instructions (those stay in your code)
+- Malformed inputs (FlakeStorm will generate those as mutations)
+- Test-only prompts that users would never send
+
+✅ **Do include:**
+- Real user queries from production
+- Expected use cases
+- Prompts that should always work
+- Representative examples of your user base
 
 ### Mutation Types
 
@@ -862,6 +1119,143 @@ agent = AgentExecutor(...)
 
 ---
 
+## Request Templates and Connection Setup
+
+### Understanding Request Templates
+
+Request templates allow you to map FlakeStorm's format to your agent's exact API format.
+
+#### Basic Template
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/api/chat"
+  type: "http"
+  request_template: |
+    {"message": "{prompt}", "stream": false}
+  response_path: "$.reply"
+```
+
+**What happens:**
+1. FlakeStorm takes golden prompt: `"Book a flight to Paris"`
+2. Replaces `{prompt}` in template: `{"message": "Book a flight to Paris", "stream": false}`
+3. Sends to your endpoint
+4. Extracts response from `$.reply` path
+
+#### Structured Input Mapping
+
+For agents that accept structured input:
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/generate-query"
+  type: "http"
+  method: "POST"
+  request_template: |
+    {
+      "industry": "{industry}",
+      "productName": "{productName}",
+      "businessModel": "{businessModel}",
+      "targetMarket": "{targetMarket}",
+      "description": "{description}"
+    }
+  response_path: "$.query"
+  parse_structured_input: true
+```
+
+**Golden Prompt:**
+```yaml
+golden_prompts:
+  - |
+    Industry: Fitness tech
+    Product/Service: AI personal trainer app
+    Business Model: B2C
+    Target Market: fitness enthusiasts
+    Description: An app that provides personalized workout plans
+```
+
+**What happens:**
+1. FlakeStorm parses structured input into key-value pairs
+2. Maps fields to template: `{"industry": "Fitness tech", "productName": "AI personal trainer app", ...}`
+3. Sends to your endpoint
+4. Extracts response from `$.query`
+
+#### Different HTTP Methods
+
+**GET Request:**
+```yaml
+agent:
+  endpoint: "http://api.example.com/search"
+  type: "http"
+  method: "GET"
+  request_template: "q={prompt}"
+  query_params:
+    api_key: "${API_KEY}"
+    format: "json"
+```
+
+**PUT Request:**
+```yaml
+agent:
+  endpoint: "http://api.example.com/update"
+  type: "http"
+  method: "PUT"
+  request_template: |
+    {"id": "123", "content": "{prompt}"}
+```
+
+### Connection Setup
+
+#### For Python Code (No Endpoint Needed)
+
+```python
+# my_agent.py
+async def flakestorm_agent(input: str) -> str:
+    # Your agent logic
+    return result
+```
+
+```yaml
+agent:
+  endpoint: "my_agent:flakestorm_agent"
+  type: "python"
+```
+
+#### For TypeScript/JavaScript (Need HTTP Endpoint)
+
+Create a wrapper endpoint:
+
+```typescript
+// test-endpoint.ts
+import express from 'express';
+import { yourAgentFunction } from './your-code';
+
+const app = express();
+app.use(express.json());
+
+app.post('/flakestorm-test', async (req, res) => {
+  const result = await yourAgentFunction(req.body.input);
+  res.json({ output: result });
+});
+
+app.listen(8000);
+```
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/flakestorm-test"
+  type: "http"
+```
+
+#### Localhost vs Public Endpoint
+
+- **Same machine:** Use `localhost:8000`
+- **Different machine/CI/CD:** Use public endpoint (ngrok, cloud deployment)
+
+See [Connection Guide](CONNECTION_GUIDE.md) for detailed setup instructions.
+
+---
+
 ## Advanced Usage
 
 ### Custom Mutation Templates
@@ -920,6 +1314,306 @@ advanced:
   concurrency: 5  # Max 5 parallel requests
   retries: 3      # Retry failed requests 3 times
 ```
+
+### Golden Prompt Guide
+
+A comprehensive guide to creating effective golden prompts for your agent.
+
+#### Step-by-Step: Creating Golden Prompts
+
+**Step 1: Identify Core Use Cases**
+```yaml
+# List your agent's primary functions
+# Example: Flight booking agent
+golden_prompts:
+  - "Book a flight"           # Core function
+  - "Check flight status"     # Core function
+  - "Cancel booking"           # Core function
+```
+
+**Step 2: Add Variations for Each Use Case**
+```yaml
+golden_prompts:
+  # Booking variations
+  - "Book a flight from NYC to LA"
+  - "I need to fly to Paris"
+  - "Reserve a ticket to Tokyo"
+  - "Can you book me a flight?"
+
+  # Status check variations
+  - "What's my flight status?"
+  - "Check my booking"
+  - "Is my flight on time?"
+```
+
+**Step 3: Include Edge Cases**
+```yaml
+golden_prompts:
+  # Normal cases (from Step 2)
+  - "Book a flight from NYC to LA"
+
+  # Edge cases
+  - "Book a flight"                    # Minimal input
+  - "I need to travel somewhere"      # Vague request
+  - "What if I need to change my flight?"  # Conditional
+  - "Book a flight for next year"     # Far future
+```
+
+**Step 4: Cover Different User Styles**
+```yaml
+golden_prompts:
+  # Formal
+  - "I would like to book a flight from New York to Los Angeles"
+
+  # Casual
+  - "hey can u book me a flight nyc to la"
+
+  # Technical/precise
+  - "Flight booking: JFK -> LAX, 2024-03-15, economy"
+
+  # Verbose
+  - "Hi! I'm planning a trip and I need to book a flight from New York City to Los Angeles on March 15th, 2024. Can you help me with that?"
+```
+
+#### Golden Prompts for Structured Input Agents
+
+For agents that accept structured data (JSON, YAML, key-value pairs):
+
+**Example: Reddit Community Discovery Agent**
+```yaml
+golden_prompts:
+  # Complete structured input
+  - |
+    Industry: Fitness tech
+    Product/Service: AI personal trainer app
+    Business Model: B2C
+    Target Market: fitness enthusiasts, people who want to lose weight
+    Description: An app that provides personalized workout plans using AI
+
+  # Different business model
+  - |
+    Industry: Marketing tech
+    Product/Service: Email automation platform
+    Business Model: B2B SaaS
+    Target Market: small business owners, marketing teams
+    Description: Automated email campaigns for small businesses
+
+  # Minimal input (edge case)
+  - |
+    Industry: Healthcare tech
+    Product/Service: Telemedicine platform
+    Business Model: B2C
+
+  # Different industry
+  - |
+    Industry: E-commerce
+    Product/Service: Handmade crafts marketplace
+    Business Model: Marketplace
+    Target Market: crafters, DIY enthusiasts
+    Description: Platform connecting artisans with buyers
+```
+
+**Example: API Request Builder Agent**
+```yaml
+golden_prompts:
+  - |
+    Method: GET
+    Endpoint: /users
+    Headers: {"Authorization": "Bearer token"}
+
+  - |
+    Method: POST
+    Endpoint: /orders
+    Body: {"product_id": 123, "quantity": 2}
+
+  - |
+    Method: PUT
+    Endpoint: /users/123
+    Body: {"name": "John Doe"}
+```
+
+#### Domain-Specific Examples
+
+**E-commerce Agent:**
+```yaml
+golden_prompts:
+  # Product search
+  - "I'm looking for a red dress size medium"
+  - "Show me running shoes under $100"
+  - "Find blue jeans for men"
+
+  # Cart operations
+  - "Add this to my cart"
+  - "What's in my cart?"
+  - "Remove item from cart"
+
+  # Orders
+  - "Track my order #ABC123"
+  - "What's my order status?"
+  - "Cancel my order"
+
+  # Support
+  - "What's the return policy?"
+  - "How do I exchange an item?"
+  - "Contact customer service"
+```
+
+**Code Generation Agent:**
+```yaml
+golden_prompts:
+  # Simple functions
+  - "Write a Python function to sort a list"
+  - "Create a function to calculate factorial"
+
+  # Components
+  - "Create a React component for a login form"
+  - "Build a Vue component for a todo list"
+
+  # Integration
+  - "How do I connect to PostgreSQL in Node.js?"
+  - "Show me how to use Redis with Python"
+
+  # Debugging
+  - "Fix this bug: [code snippet]"
+  - "Why is this code not working?"
+```
+
+**Customer Support Agent:**
+```yaml
+golden_prompts:
+  # Account questions
+  - "What's my account balance?"
+  - "How do I change my password?"
+  - "Update my email address"
+
+  # Product questions
+  - "How do I use feature X?"
+  - "What are the system requirements?"
+  - "Is there a mobile app?"
+
+  # Billing
+  - "What's my subscription status?"
+  - "How do I cancel my subscription?"
+  - "Update my payment method"
+```
+
+#### Quality Checklist
+
+Before finalizing your golden prompts, verify:
+
+- [ ] **Coverage**: All major features/use cases included
+- [ ] **Diversity**: Different complexity levels (simple, medium, complex)
+- [ ] **Realism**: Based on actual user queries from production
+- [ ] **Edge Cases**: Unusual but valid inputs included
+- [ ] **User Styles**: Formal, casual, technical, verbose variations
+- [ ] **Quantity**: 5-15 prompts recommended (start with 5, expand)
+- [ ] **Clarity**: Each prompt represents a distinct use case
+- [ ] **Relevance**: All prompts are things users would actually send
+
+#### Iterative Improvement
+
+**Phase 1: Initial Set (5 prompts)**
+```yaml
+golden_prompts:
+  - "Primary use case 1"
+  - "Primary use case 2"
+  - "Primary use case 3"
+  - "Secondary use case 1"
+  - "Edge case 1"
+```
+
+**Phase 2: Expand (10 prompts)**
+```yaml
+# Add variations and more edge cases
+golden_prompts:
+  # ... previous 5 ...
+  - "Primary use case 1 variation"
+  - "Primary use case 2 variation"
+  - "Secondary use case 2"
+  - "Edge case 2"
+  - "Edge case 3"
+```
+
+**Phase 3: Refine (15+ prompts)**
+```yaml
+# Add based on test results and production data
+golden_prompts:
+  # ... previous 10 ...
+  - "Real user query from logs"
+  - "Another production example"
+  - "Failure case that should work"
+```
+
+#### Common Mistakes to Avoid
+
+❌ **Too Generic**
+```yaml
+# Bad: Too vague
+golden_prompts:
+  - "Help me"
+  - "Do something"
+  - "Question"
+```
+
+✅ **Specific and Actionable**
+```yaml
+# Good: Clear intent
+golden_prompts:
+  - "Book a flight from NYC to LA"
+  - "What's my account balance?"
+  - "Cancel my subscription"
+```
+
+❌ **Including System Prompts**
+```yaml
+# Bad: This is a system prompt, not a golden prompt
+golden_prompts:
+  - "You are a helpful assistant that..."
+```
+
+✅ **User Inputs Only**
+```yaml
+# Good: Actual user queries
+golden_prompts:
+  - "Book a flight"
+  - "What's the weather?"
+```
+
+❌ **Only Happy Path**
+```yaml
+# Bad: Only perfect inputs
+golden_prompts:
+  - "Book a flight from New York to Los Angeles on March 15th, 2024, economy class, window seat, no meals"
+```
+
+✅ **Include Variations**
+```yaml
+# Good: Various input styles
+golden_prompts:
+  - "Book a flight from NYC to LA"
+  - "I need to fly to Los Angeles"
+  - "flight booking please"
+  - "Can you help me book a flight?"
+```
+
+#### Testing Your Golden Prompts
+
+Before running FlakeStorm, manually test your golden prompts:
+
+```bash
+# Test each golden prompt manually
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Your golden prompt here"}'
+```
+
+Verify:
+- ✅ Agent responds correctly
+- ✅ Response time is reasonable
+- ✅ No errors occur
+- ✅ Response format matches expectations
+
+If a golden prompt fails manually, fix your agent first, then use it in FlakeStorm.
 
 ---
 

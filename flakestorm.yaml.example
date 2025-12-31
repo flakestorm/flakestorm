@@ -6,22 +6,65 @@
 
 version: "1.0"
 
-# Agent Configuration
-# Define how flakestorm connects to your agent
+# =============================================================================
+# AGENT CONFIGURATION
+# =============================================================================
+# Choose the configuration that matches your agent setup:
+
+# Example 1: Default HTTP format (simple)
 agent:
-  # HTTP endpoint that accepts POST requests with {"input": "..."} body
   endpoint: "http://localhost:8000/invoke"
-
-  # Agent type: "http" | "python" | "langchain"
   type: "http"
-
-  # Timeout in milliseconds for each agent call
   timeout: 30000
-
-  # Optional: Custom headers for HTTP requests
+  # Optional: Custom headers
   # headers:
   #   Authorization: "Bearer ${AGENT_API_KEY}"
-  #   Content-Type: "application/json"
+
+# Example 2: Custom request template (for custom API formats)
+# agent:
+#   endpoint: "http://localhost:8000/api/chat"
+#   type: "http"
+#   method: "POST"
+#   timeout: 30000
+#   request_template: |
+#     {"message": "{prompt}", "stream": false}
+#   response_path: "$.reply"
+#   headers:
+#     Authorization: "Bearer ${API_KEY}"
+
+# Example 3: Structured input mapping (for agents with structured input)
+# agent:
+#   endpoint: "http://localhost:8000/generate-query"
+#   type: "http"
+#   method: "POST"
+#   timeout: 30000
+#   request_template: |
+#     {
+#       "industry": "{industry}",
+#       "productName": "{productName}",
+#       "businessModel": "{businessModel}",
+#       "targetMarket": "{targetMarket}",
+#       "description": "{description}"
+#     }
+#   response_path: "$.query"
+#   parse_structured_input: true
+
+# Example 4: GET request with query parameters
+# agent:
+#   endpoint: "http://api.example.com/search"
+#   type: "http"
+#   method: "GET"
+#   timeout: 30000
+#   request_template: "q={prompt}"
+#   query_params:
+#     api_key: "${API_KEY}"
+#     format: "json"
+
+# Example 5: Python adapter (no HTTP endpoint needed)
+# agent:
+#   endpoint: "my_agent:flakestorm_agent"
+#   type: "python"
+#   timeout: 30000
 
 # Model Configuration
 # The local model used to generate adversarial mutations

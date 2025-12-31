@@ -31,6 +31,25 @@ class AgentConfig(BaseModel):
 
     endpoint: str = Field(..., description="Agent endpoint URL or Python module path")
     type: AgentType = Field(default=AgentType.HTTP, description="Agent connection type")
+    method: str = Field(
+        default="POST",
+        description="HTTP method (GET, POST, PUT, PATCH, DELETE)",
+    )
+    request_template: str | None = Field(
+        default=None,
+        description="Template for request body/query with variable substitution (use {prompt} or {field_name})",
+    )
+    response_path: str | None = Field(
+        default=None,
+        description="JSONPath or dot notation to extract response from JSON (e.g., '$.data.result' or 'data.result')",
+    )
+    query_params: dict[str, str] = Field(
+        default_factory=dict, description="Static query parameters for HTTP requests"
+    )
+    parse_structured_input: bool = Field(
+        default=True,
+        description="Whether to parse structured golden prompts into key-value pairs",
+    )
     timeout: int = Field(
         default=30000, ge=1000, le=300000, description="Timeout in milliseconds"
     )
@@ -45,10 +64,27 @@ class AgentConfig(BaseModel):
         # Expand environment variables
         return os.path.expandvars(v)
 
+    @field_validator("method")
+    @classmethod
+    def validate_method(cls, v: str) -> str:
+        """Validate HTTP method."""
+        valid_methods = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+        if v.upper() not in valid_methods:
+            raise ValueError(
+                f"Invalid HTTP method: {v}. Must be one of {valid_methods}"
+            )
+        return v.upper()
+
     @field_validator("headers")
     @classmethod
     def expand_header_env_vars(cls, v: dict[str, str]) -> dict[str, str]:
         """Expand environment variables in header values."""
+        return {k: os.path.expandvars(val) for k, val in v.items()}
+
+    @field_validator("query_params")
+    @classmethod
+    def expand_query_env_vars(cls, v: dict[str, str]) -> dict[str, str]:
+        """Expand environment variables in query parameter values."""
         return {k: os.path.expandvars(val) for k, val in v.items()}
 
 

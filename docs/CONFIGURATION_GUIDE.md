@@ -47,6 +47,10 @@ Define how flakestorm connects to your AI agent.
 
 ### HTTP Agent
 
+FlakeStorm's HTTP adapter is highly flexible and supports any endpoint format through request templates and response path configuration.
+
+#### Basic Configuration
+
 ```yaml
 agent:
   endpoint: "http://localhost:8000/invoke"
@@ -57,7 +61,7 @@ agent:
     Content-Type: "application/json"
 ```
 
-**Expected API Format:**
+**Default Format (if no template specified):**
 
 Request:
 ```json
@@ -68,6 +72,126 @@ POST /invoke
 Response:
 ```json
 {"output": "agent response text"}
+```
+
+#### Custom Request Template
+
+Map your endpoint's exact format using `request_template`:
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/api/chat"
+  type: "http"
+  method: "POST"
+  request_template: |
+    {"message": "{prompt}", "stream": false}
+  response_path: "$.reply"
+```
+
+**Template Variables:**
+- `{prompt}` - Full golden prompt text
+- `{field_name}` - Parsed structured input fields (see Structured Input below)
+
+#### Structured Input Parsing
+
+For agents that accept structured input (like your Reddit query generator):
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/generate-query"
+  type: "http"
+  method: "POST"
+  request_template: |
+    {
+      "industry": "{industry}",
+      "productName": "{productName}",
+      "businessModel": "{businessModel}",
+      "targetMarket": "{targetMarket}",
+      "description": "{description}"
+    }
+  response_path: "$.query"
+  parse_structured_input: true  # Default: true
+```
+
+**Golden Prompt Format:**
+```yaml
+golden_prompts:
+  - |
+    Industry: Fitness tech
+    Product/Service: AI personal trainer app
+    Business Model: B2C
+    Target Market: fitness enthusiasts
+    Description: An app that provides personalized workout plans
+```
+
+FlakeStorm will automatically parse this and map fields to your template.
+
+#### HTTP Methods
+
+Support for all HTTP methods:
+
+**GET Request:**
+```yaml
+agent:
+  endpoint: "http://api.example.com/search"
+  type: "http"
+  method: "GET"
+  request_template: "q={prompt}"
+  query_params:
+    api_key: "${API_KEY}"
+    format: "json"
+```
+
+**PUT Request:**
+```yaml
+agent:
+  endpoint: "http://api.example.com/update"
+  type: "http"
+  method: "PUT"
+  request_template: |
+    {"id": "123", "content": "{prompt}"}
+```
+
+#### Response Path Extraction
+
+Extract responses from complex JSON structures:
+
+```yaml
+agent:
+  endpoint: "http://api.example.com/chat"
+  type: "http"
+  response_path: "$.choices[0].message.content"  # JSONPath
+  # OR
+  response_path: "data.result"  # Dot notation
+```
+
+**Supported Formats:**
+- JSONPath: `"$.data.result"`, `"$.choices[0].message.content"`
+- Dot notation: `"data.result"`, `"response.text"`
+- Simple key: `"output"`, `"response"`
+
+#### Complete Example
+
+```yaml
+agent:
+  endpoint: "http://localhost:8000/api/v1/agent"
+  type: "http"
+  method: "POST"
+  timeout: 30000
+  headers:
+    Authorization: "Bearer ${API_KEY}"
+    Content-Type: "application/json"
+  request_template: |
+    {
+      "messages": [
+        {"role": "user", "content": "{prompt}"}
+      ],
+      "temperature": 0.7
+    }
+  response_path: "$.choices[0].message.content"
+  query_params:
+    version: "v1"
+  parse_structured_input: true
 ```
 
 ### Python Agent
@@ -109,6 +233,11 @@ chain: Runnable = ...  # Your LangChain chain
 |--------|------|---------|-------------|
 | `endpoint` | string | required | URL or module path |
 | `type` | string | `"http"` | `http`, `python`, or `langchain` |
+| `method` | string | `"POST"` | HTTP method: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| `request_template` | string | `null` | Template for request body/query with `{prompt}` or `{field_name}` variables |
+| `response_path` | string | `null` | JSONPath or dot notation to extract response (e.g., `"$.data.result"`) |
+| `query_params` | object | `{}` | Static query parameters (supports env vars) |
+| `parse_structured_input` | boolean | `true` | Whether to parse structured golden prompts into key-value pairs |
 | `timeout` | integer | `30000` | Request timeout in ms (1000-300000) |
 | `headers` | object | `{}` | HTTP headers (supports env vars) |
 

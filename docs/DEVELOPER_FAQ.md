@@ -456,6 +456,109 @@ class PythonAgentAdapter:
 
 ---
 
+### Q: When do I need to create an HTTP endpoint vs use Python adapter?
+
+**A:** It depends on your agent's language and setup:
+
+| Your Agent Code | Adapter Type | Endpoint Needed? | Notes |
+|----------------|--------------|------------------|-------|
+| Python (internal) | Python adapter | ❌ No | Use `type: "python"`, call function directly |
+| TypeScript/JavaScript | HTTP adapter | ✅ Yes | Must create HTTP endpoint (can be localhost) |
+| Java/Go/Rust | HTTP adapter | ✅ Yes | Must create HTTP endpoint (can be localhost) |
+| Already has HTTP API | HTTP adapter | ✅ Yes | Use existing endpoint |
+
+**For non-Python code (TypeScript example):**
+
+Since FlakeStorm is a Python CLI tool, it can only directly call Python functions. For TypeScript/JavaScript/other languages, you **must** create an HTTP endpoint:
+
+```typescript
+// test-endpoint.ts - Wrapper endpoint for FlakeStorm
+import express from 'express';
+import { generateRedditSearchQuery } from './your-internal-code';
+
+const app = express();
+app.use(express.json());
+
+app.post('/flakestorm-test', async (req, res) => {
+  // FlakeStorm sends: {"input": "Industry: X\nProduct: Y..."}
+  const structuredText = req.body.input;
+
+  // Parse structured input
+  const params = parseStructuredInput(structuredText);
+
+  // Call your internal function
+  const query = await generateRedditSearchQuery(params);
+
+  // Return in FlakeStorm's expected format
+  res.json({ output: query });
+});
+
+app.listen(8000, () => {
+  console.log('FlakeStorm test endpoint: http://localhost:8000/flakestorm-test');
+});
+```
+
+Then in `flakestorm.yaml`:
+```yaml
+agent:
+  endpoint: "http://localhost:8000/flakestorm-test"
+  type: "http"
+  request_template: |
+    {
+      "industry": "{industry}",
+      "productName": "{productName}",
+      "businessModel": "{businessModel}",
+      "targetMarket": "{targetMarket}",
+      "description": "{description}"
+    }
+  response_path: "$.output"
+```
+
+---
+
+### Q: Do I need a public endpoint or can I use localhost?
+
+**A:** It depends on where FlakeStorm runs:
+
+| FlakeStorm Location | Agent Location | Endpoint Type | Works? |
+|---------------------|----------------|---------------|--------|
+| Same machine | Same machine | `localhost:8000` | ✅ Yes |
+| Different machine | Your machine | `localhost:8000` | ❌ No - use public endpoint or ngrok |
+| CI/CD server | Your machine | `localhost:8000` | ❌ No - use public endpoint |
+| CI/CD server | Cloud (AWS/GCP) | `https://api.example.com` | ✅ Yes |
+
+**Options for exposing local endpoint:**
+1. **ngrok**: `ngrok http 8000` → get public URL
+2. **localtunnel**: `lt --port 8000` → get public URL
+3. **Deploy to cloud**: Deploy your test endpoint to a cloud service
+4. **VPN/SSH tunnel**: If both machines are on same network
+
+---
+
+### Q: Can I test internal code without creating an endpoint?
+
+**A:** Only if your code is in Python:
+
+```python
+# my_agent.py
+async def flakestorm_agent(input: str) -> str:
+    # Parse input, call your internal functions
+    return result
+```
+
+```yaml
+# flakestorm.yaml
+agent:
+  endpoint: "my_agent:flakestorm_agent"
+  type: "python"  # ← No HTTP endpoint needed!
+```
+
+For non-Python code, you **must** create an HTTP endpoint wrapper.
+
+See [Connection Guide](CONNECTION_GUIDE.md) for detailed examples and troubleshooting.
+
+---
+
 ## Testing & Quality
 
 ### Q: Why are tests split by module?

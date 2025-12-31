@@ -110,6 +110,7 @@ docs/*
 # Now un-ignore the specific files we want to track
 !docs/USAGE_GUIDE.md
 !docs/CONFIGURATION_GUIDE.md
+!docs/CONNECTION_GUIDE.md
 !docs/TEST_SCENARIOS.md
 !docs/MODULES.md
 !docs/DEVELOPER_FAQ.md

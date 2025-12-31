@@ -333,6 +333,7 @@ Where:
 ### Getting Started
 - [📖 Usage Guide](docs/USAGE_GUIDE.md) - Complete end-to-end guide
 - [⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md) - All configuration options
+- [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) - How to connect FlakeStorm to your agent
 - [🧪 Test Scenarios](docs/TEST_SCENARIOS.md) - Real-world examples with code
 
 ### For Developers
