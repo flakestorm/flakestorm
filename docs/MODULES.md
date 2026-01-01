@@ -308,11 +308,75 @@ The bridge pattern was chosen because:
 ```python
 class MutationType(str, Enum):
     """Types of adversarial mutations."""
-    PARAPHRASE = "paraphrase"       # Same meaning, different words
-    NOISE = "noise"                 # Typos and errors
-    TONE_SHIFT = "tone_shift"       # Different emotional tone
+    PARAPHRASE = "paraphrase"              # Same meaning, different words
+    NOISE = "noise"                        # Typos and errors
+    TONE_SHIFT = "tone_shift"              # Different emotional tone
     PROMPT_INJECTION = "prompt_injection"  # Jailbreak attempts
+    ENCODING_ATTACKS = "encoding_attacks"  # Encoded inputs
+    CONTEXT_MANIPULATION = "context_manipulation"  # Context changes
+    LENGTH_EXTREMES = "length_extremes"    # Edge case lengths
+    CUSTOM = "custom"                      # User-defined templates
 ```
+
+**The 8 Core Mutation Types:**
+
+1. **PARAPHRASE** (Weight: 1.0)
+   - **What it tests**: Semantic understanding - can the agent handle different wording?
+   - **How it works**: LLM rewrites the prompt using synonyms and alternative phrasing while preserving intent
+   - **Why essential**: Users express the same intent in many ways. Agents must understand meaning, not just keywords.
+   - **Template strategy**: Instructs LLM to use completely different words while keeping exact same meaning
+
+2. **NOISE** (Weight: 0.8)
+   - **What it tests**: Typo tolerance - can the agent handle user errors?
+   - **How it works**: LLM adds realistic typos (swapped letters, missing letters, abbreviations)
+   - **Why essential**: Real users make typos, especially on mobile. Robust agents must handle common errors gracefully.
+   - **Template strategy**: Simulates realistic typing errors as if typed quickly on a phone
+
+3. **TONE_SHIFT** (Weight: 0.9)
+   - **What it tests**: Emotional resilience - can the agent handle frustrated users?
+   - **How it works**: LLM rewrites with urgency, impatience, and slight aggression
+   - **Why essential**: Users get impatient. Agents must maintain quality even under stress.
+   - **Template strategy**: Adds words like "NOW", "HURRY", "ASAP" and frustration phrases
+
+4. **PROMPT_INJECTION** (Weight: 1.5)
+   - **What it tests**: Security - can the agent resist manipulation?
+   - **How it works**: LLM adds injection attempts like "ignore previous instructions"
+   - **Why essential**: Attackers try to manipulate agents. Security is non-negotiable.
+   - **Template strategy**: Keeps original request but adds injection techniques after it
+
+5. **ENCODING_ATTACKS** (Weight: 1.3)
+   - **What it tests**: Parser robustness - can the agent handle encoded inputs?
+   - **How it works**: LLM transforms prompt using Base64, Unicode escapes, or URL encoding
+   - **Why essential**: Attackers use encoding to bypass filters. Agents must decode correctly.
+   - **Template strategy**: Instructs LLM to use various encoding techniques (Base64, Unicode, URL)
+
+6. **CONTEXT_MANIPULATION** (Weight: 1.1)
+   - **What it tests**: Context extraction - can the agent find intent in noisy context?
+   - **How it works**: LLM adds irrelevant information, removes key context, or reorders structure
+   - **Why essential**: Real conversations include irrelevant information. Agents must extract the core request.
+   - **Template strategy**: Adds/removes/reorders context while keeping core request ambiguous
+
+7. **LENGTH_EXTREMES** (Weight: 1.2)
+   - **What it tests**: Edge cases - can the agent handle empty or very long inputs?
+   - **How it works**: LLM creates minimal versions (removing non-essential words) or very long versions (expanding with repetition)
+   - **Why essential**: Real inputs vary wildly in length. Agents must handle boundaries.
+   - **Template strategy**: Creates extremely short or extremely long versions to test token limits
+
+8. **CUSTOM** (Weight: 1.0)
+   - **What it tests**: Domain-specific scenarios
+   - **How it works**: User provides custom template with `{prompt}` placeholder
+   - **Why essential**: Every domain has unique failure modes. Custom mutations let you test them.
+   - **Template strategy**: Applies user-defined transformation instructions
+
+**Mutation Philosophy:**
+
+The 8 mutation types are designed to cover different failure modes:
+- **Semantic Robustness**: PARAPHRASE, CONTEXT_MANIPULATION test understanding
+- **Input Robustness**: NOISE, ENCODING_ATTACKS, LENGTH_EXTREMES test parsing
+- **Security**: PROMPT_INJECTION, ENCODING_ATTACKS test resistance to attacks
+- **User Experience**: TONE_SHIFT, NOISE, CONTEXT_MANIPULATION test real-world usage
+
+Together, they provide comprehensive coverage of agent failure modes.
 
 ```python
 @dataclass
@@ -321,13 +385,17 @@ class Mutation:
     original: str           # Original prompt
     mutated: str           # Mutated version
     type: MutationType     # Type of mutation
-    difficulty: float      # Scoring weight
+    weight: float          # Scoring weight
     metadata: dict         # Additional info
 
     @property
     def id(self) -> str:
         """Unique hash for this mutation."""
         return hashlib.md5(..., usedforsecurity=False)
+    
+    def is_valid(self) -> bool:
+        """Validates mutation, with special handling for LENGTH_EXTREMES."""
+        # LENGTH_EXTREMES may intentionally create empty or very long strings
 ```
 
 **Design Analysis:**
@@ -335,13 +403,15 @@ class Mutation:
 ✅ **Strengths:**
 - Enum prevents invalid mutation types
 - Dataclass provides clean, typed structure
-- Built-in difficulty scoring for weighted results
+- Built-in weight scoring for weighted results
+- Special validation logic for edge cases (LENGTH_EXTREMES)
 
 **Why This Design:**
 String enum was chosen because:
 1. Values serialize directly to YAML/JSON
 2. Type checking catches typos
 3. Easy to extend with new types
+4. All 8 types work together to provide comprehensive testing coverage
 
 ---
 

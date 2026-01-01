@@ -148,6 +148,32 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 
 ---
 
+### Phase 6: Essential Mutations (Week 7-8)
+
+#### Core Mutation Types
+- [x] Add ENCODING_ATTACKS mutation type
+- [x] Add CONTEXT_MANIPULATION mutation type
+- [x] Add LENGTH_EXTREMES mutation type
+- [x] Update MutationType enum with all 8 types
+- [x] Create templates for new mutation types
+- [x] Update mutation validation for edge cases
+
+#### Configuration Updates
+- [x] Update MutationConfig defaults
+- [x] Update example configuration files
+- [x] Update orchestrator comments
+
+#### Documentation Updates
+- [x] Update README.md with comprehensive mutation types table
+- [x] Add Mutation Strategy section to README
+- [x] Update API_SPECIFICATION.md with all 8 types
+- [x] Update MODULES.md with detailed mutation documentation
+- [x] Add Mutation Types Guide to CONFIGURATION_GUIDE.md
+- [x] Add Understanding Mutation Types to USAGE_GUIDE.md
+- [x] Add Mutation Type Deep Dive to TEST_SCENARIOS.md
+
+---
+
 ## Progress Summary
 
 | Phase | Status | Completion |
@@ -157,6 +183,7 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 | CLI Phase 3: Runner & Assertions | ✅ Complete | 100% |
 | CLI Phase 4: CLI & Reporting | ✅ Complete | 100% |
 | CLI Phase 5: V2 Features | ✅ Complete | 90% |
+| CLI Phase 6: Essential Mutations | ✅ Complete | 100% |
 | Documentation | ✅ Complete | 100% |
 
 ---

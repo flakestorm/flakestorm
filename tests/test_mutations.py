@@ -17,18 +17,28 @@ class TestMutationType:
         assert MutationType.NOISE.value == "noise"
         assert MutationType.TONE_SHIFT.value == "tone_shift"
         assert MutationType.PROMPT_INJECTION.value == "prompt_injection"
+        assert MutationType.ENCODING_ATTACKS.value == "encoding_attacks"
+        assert MutationType.CONTEXT_MANIPULATION.value == "context_manipulation"
+        assert MutationType.LENGTH_EXTREMES.value == "length_extremes"
+        assert MutationType.CUSTOM.value == "custom"
 
     def test_display_name(self):
         """Test display name generation."""
         assert MutationType.PARAPHRASE.display_name == "Paraphrase"
         assert MutationType.TONE_SHIFT.display_name == "Tone Shift"
         assert MutationType.PROMPT_INJECTION.display_name == "Prompt Injection"
+        assert MutationType.ENCODING_ATTACKS.display_name == "Encoding Attacks"
+        assert MutationType.CONTEXT_MANIPULATION.display_name == "Context Manipulation"
+        assert MutationType.LENGTH_EXTREMES.display_name == "Length Extremes"
 
     def test_default_weights(self):
         """Test default weights are assigned."""
         assert MutationType.PARAPHRASE.default_weight == 1.0
         assert MutationType.PROMPT_INJECTION.default_weight == 1.5
         assert MutationType.NOISE.default_weight == 0.8
+        assert MutationType.ENCODING_ATTACKS.default_weight == 1.3
+        assert MutationType.CONTEXT_MANIPULATION.default_weight == 1.1
+        assert MutationType.LENGTH_EXTREMES.default_weight == 1.2
 
 
 class TestMutation:
@@ -81,13 +91,30 @@ class TestMutation:
         )
         assert not invalid_same.is_valid()
 
-        # Invalid: empty mutated
+        # Invalid: empty mutated (for non-LENGTH_EXTREMES types)
         invalid_empty = Mutation(
             original="Test prompt",
             mutated="",
             type=MutationType.PARAPHRASE,
         )
         assert not invalid_empty.is_valid()
+
+        # Valid: empty mutated for LENGTH_EXTREMES (edge case testing)
+        valid_empty = Mutation(
+            original="Test prompt",
+            mutated="",
+            type=MutationType.LENGTH_EXTREMES,
+        )
+        assert valid_empty.is_valid()
+
+        # Valid: very long mutated for LENGTH_EXTREMES
+        very_long = "x" * (len("Test prompt") * 5)
+        valid_long = Mutation(
+            original="Test prompt",
+            mutated=very_long,
+            type=MutationType.LENGTH_EXTREMES,
+        )
+        assert valid_long.is_valid()
 
     def test_mutation_serialization(self):
         """Test to_dict and from_dict."""
@@ -113,7 +140,19 @@ class TestMutationTemplates:
         """Test that all mutation types have templates."""
         templates = MutationTemplates()
 
-        for mutation_type in MutationType:
+        # Test all 8 mutation types
+        expected_types = [
+            MutationType.PARAPHRASE,
+            MutationType.NOISE,
+            MutationType.TONE_SHIFT,
+            MutationType.PROMPT_INJECTION,
+            MutationType.ENCODING_ATTACKS,
+            MutationType.CONTEXT_MANIPULATION,
+            MutationType.LENGTH_EXTREMES,
+            MutationType.CUSTOM,
+        ]
+
+        for mutation_type in expected_types:
             template = templates.get(mutation_type)
             assert template is not None
             assert "{prompt}" in template

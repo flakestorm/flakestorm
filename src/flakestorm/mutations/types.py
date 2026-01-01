@@ -16,11 +16,14 @@ class MutationType(str, Enum):
     """
     Types of adversarial mutations.
 
-    Includes 5 mutation types:
+    Includes 8 mutation types:
     - PARAPHRASE: Semantic rewrites
     - NOISE: Typos and spelling errors
     - TONE_SHIFT: Tone changes
     - PROMPT_INJECTION: Basic adversarial attacks
+    - ENCODING_ATTACKS: Encoded inputs (Base64, Unicode, URL encoding)
+    - CONTEXT_MANIPULATION: Context handling (adding/removing context, reordering)
+    - LENGTH_EXTREMES: Edge cases (empty inputs, very long inputs, token limits)
     - CUSTOM: User-defined mutation templates
     """
 
@@ -35,6 +38,15 @@ class MutationType(str, Enum):
 
     PROMPT_INJECTION = "prompt_injection"
     """Basic adversarial attacks attempting to manipulate the agent."""
+
+    ENCODING_ATTACKS = "encoding_attacks"
+    """Encoded inputs using Base64, Unicode escapes, or URL encoding."""
+
+    CONTEXT_MANIPULATION = "context_manipulation"
+    """Adding, removing, or reordering context information."""
+
+    LENGTH_EXTREMES = "length_extremes"
+    """Edge case inputs: empty, minimal, or very long versions."""
 
     CUSTOM = "custom"
     """User-defined mutation templates for domain-specific testing."""
@@ -52,6 +64,9 @@ class MutationType(str, Enum):
             MutationType.NOISE: "Add typos and spelling errors",
             MutationType.TONE_SHIFT: "Change tone to aggressive/impatient",
             MutationType.PROMPT_INJECTION: "Add basic adversarial injection attacks",
+            MutationType.ENCODING_ATTACKS: "Transform using Base64, Unicode, or URL encoding",
+            MutationType.CONTEXT_MANIPULATION: "Add, remove, or reorder context information",
+            MutationType.LENGTH_EXTREMES: "Create empty, minimal, or very long versions",
             MutationType.CUSTOM: "Apply user-defined mutation templates",
         }
         return descriptions.get(self, "Unknown mutation type")
@@ -64,6 +79,9 @@ class MutationType(str, Enum):
             MutationType.NOISE: 0.8,
             MutationType.TONE_SHIFT: 0.9,
             MutationType.PROMPT_INJECTION: 1.5,
+            MutationType.ENCODING_ATTACKS: 1.3,
+            MutationType.CONTEXT_MANIPULATION: 1.1,
+            MutationType.LENGTH_EXTREMES: 1.2,
             MutationType.CUSTOM: 1.0,
         }
         return weights.get(self, 1.0)
@@ -76,6 +94,9 @@ class MutationType(str, Enum):
             cls.NOISE,
             cls.TONE_SHIFT,
             cls.PROMPT_INJECTION,
+            cls.ENCODING_ATTACKS,
+            cls.CONTEXT_MANIPULATION,
+            cls.LENGTH_EXTREMES,
             cls.CUSTOM,
         ]
 
@@ -132,19 +153,30 @@ class Mutation:
         Check if this mutation is valid.
 
         A valid mutation:
-        - Has non-empty mutated text
-        - Is different from the original
-        - Doesn't exceed reasonable length bounds
+        - Is different from the original (except for LENGTH_EXTREMES which may be empty)
+        - Doesn't exceed reasonable length bounds (unless it's LENGTH_EXTREMES testing long inputs)
         """
+        # LENGTH_EXTREMES may intentionally create empty strings - these are valid
+        if self.type == MutationType.LENGTH_EXTREMES:
+            # Empty strings are valid for length extremes testing
+            if not self.mutated:
+                return True
+            # Very long strings are also valid for length extremes
+            # Allow up to 10x original length for length extremes testing
+            if len(self.mutated) > len(self.original) * 10:
+                return True  # Very long is valid for this type
+        
+        # For other types, empty strings are invalid
         if not self.mutated or not self.mutated.strip():
             return False
 
         if self.mutated.strip() == self.original.strip():
             return False
 
-        # Mutation shouldn't be more than 3x the original length
-        if len(self.mutated) > len(self.original) * 3:
-            return False
+        # Mutation shouldn't be more than 3x the original length (except LENGTH_EXTREMES)
+        if self.type != MutationType.LENGTH_EXTREMES:
+            if len(self.mutated) > len(self.original) * 3:
+                return False
 
         return True
 

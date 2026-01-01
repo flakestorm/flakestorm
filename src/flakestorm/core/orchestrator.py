@@ -4,7 +4,8 @@ Orchestrator for flakestorm Test Runs
 Coordinates the entire testing process: mutation generation,
 agent invocation, invariant verification, and result aggregation.
 
-Runs tests sequentially with a maximum of 50 mutations per test run.
+Note: Sequential execution and mutation limits are configured for
+local hardware constraints, not as feature limitations.
 """
 
 from __future__ import annotations
@@ -24,9 +25,9 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-# Hardcoded limits for open source edition
+# Configuration limits for local hardware constraints
 MAX_MUTATIONS_PER_RUN = 50
-PARALLEL_EXECUTION_ENABLED = False  # Sequential execution only
+PARALLEL_EXECUTION_ENABLED = False  # Sequential execution for local hardware
 
 if TYPE_CHECKING:
     from flakestorm.assertions.verifier import InvariantVerifier
@@ -105,8 +106,6 @@ class Orchestrator:
     async def run(self) -> TestResults:
         """
         Execute the full test run.
-
-        Runs tests sequentially with a maximum of 50 mutations per run.
 
         Returns:
             TestResults containing all test outcomes

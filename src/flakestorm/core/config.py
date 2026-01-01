@@ -107,7 +107,7 @@ class MutationConfig(BaseModel):
 
     Limits:
     - Maximum 50 total mutations per test run
-    - 5 mutation types: paraphrase, noise, tone_shift, prompt_injection, custom
+    - 8 mutation types: paraphrase, noise, tone_shift, prompt_injection, encoding_attacks, context_manipulation, length_extremes, custom
 
     """
 
@@ -123,8 +123,11 @@ class MutationConfig(BaseModel):
             MutationType.NOISE,
             MutationType.TONE_SHIFT,
             MutationType.PROMPT_INJECTION,
+            MutationType.ENCODING_ATTACKS,
+            MutationType.CONTEXT_MANIPULATION,
+            MutationType.LENGTH_EXTREMES,
         ],
-        description="Types of mutations to generate (5 types available)",
+        description="Types of mutations to generate (8 types available)",
     )
     weights: dict[MutationType, float] = Field(
         default_factory=lambda: {
@@ -132,6 +135,9 @@ class MutationConfig(BaseModel):
             MutationType.NOISE: 0.8,
             MutationType.TONE_SHIFT: 0.9,
             MutationType.PROMPT_INJECTION: 1.5,
+            MutationType.ENCODING_ATTACKS: 1.3,
+            MutationType.CONTEXT_MANIPULATION: 1.1,
+            MutationType.LENGTH_EXTREMES: 1.2,
             MutationType.CUSTOM: 1.0,
         },
         description="Scoring weights for each mutation type",

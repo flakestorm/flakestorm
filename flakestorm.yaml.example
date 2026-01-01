@@ -89,10 +89,13 @@ mutations:
 
   # Types of mutations to apply
   types:
-    - paraphrase        # Semantically equivalent rewrites
-    - noise             # Typos and spelling errors
-    - tone_shift        # Aggressive/impatient phrasing
-    - prompt_injection  # Adversarial attack attempts
+    - paraphrase            # Semantically equivalent rewrites
+    - noise                 # Typos and spelling errors
+    - tone_shift            # Aggressive/impatient phrasing
+    - prompt_injection      # Adversarial attack attempts
+    - encoding_attacks      # Encoded inputs (Base64, Unicode, URL)
+    - context_manipulation  # Adding/removing/reordering context
+    - length_extremes       # Empty, minimal, or very long inputs
 
   # Weights for scoring (higher = harder test, more points for passing)
   weights:
@@ -100,6 +103,9 @@ mutations:
     noise: 0.8
     tone_shift: 0.9
     prompt_injection: 1.5
+    encoding_attacks: 1.3
+    context_manipulation: 1.1
+    length_extremes: 1.2
 
 # Golden Prompts
 # Your "ideal" user inputs that the agent should handle correctly

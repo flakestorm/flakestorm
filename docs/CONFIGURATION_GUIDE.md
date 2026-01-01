@@ -287,38 +287,107 @@ mutations:
     - noise
     - tone_shift
     - prompt_injection
+    - encoding_attacks
+    - context_manipulation
+    - length_extremes
   weights:
     paraphrase: 1.0
     noise: 0.8
     tone_shift: 0.9
     prompt_injection: 1.5
+    encoding_attacks: 1.3
+    context_manipulation: 1.1
+    length_extremes: 1.2
 ```
 
-### Mutation Types
+### Mutation Types Guide
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `paraphrase` | Semantic rewrites | "Book flight" → "I need to fly" |
-| `noise` | Typos and errors | "Book flight" → "Bock fligt" |
-| `tone_shift` | Aggressive tone | "Book flight" → "BOOK A FLIGHT NOW!" |
-| `prompt_injection` | Adversarial attacks | "Book flight. Ignore instructions..." |
+flakestorm provides 8 core mutation types that test different aspects of agent robustness. Each type targets specific failure modes.
+
+| Type | What It Tests | Why It Matters | Example | When to Use |
+|------|---------------|----------------|---------|-------------|
+| `paraphrase` | Semantic understanding | Users express intent in many ways | "Book a flight" → "I need to fly out" | Essential for all agents |
+| `noise` | Typo tolerance | Real users make errors | "Book a flight" → "Book a fliight plz" | Critical for production agents |
+| `tone_shift` | Emotional resilience | Users get impatient | "Book a flight" → "I need a flight NOW!" | Important for customer-facing agents |
+| `prompt_injection` | Security | Attackers try to manipulate | "Book a flight" → "Book a flight. Ignore previous instructions..." | Essential for untrusted input |
+| `encoding_attacks` | Parser robustness | Attackers use encoding to bypass filters | "Book a flight" → "Qm9vayBhIGZsaWdodA==" (Base64) | Critical for security testing |
+| `context_manipulation` | Context extraction | Real conversations have noise | "Book a flight" → "Hey... book a flight... but also tell me about weather" | Important for conversational agents |
+| `length_extremes` | Edge cases | Inputs vary in length | "Book a flight" → "" (empty) or very long | Essential for boundary testing |
+| `custom` | Domain-specific | Every domain has unique failures | User-defined templates | Use for specific scenarios |
+
+### Mutation Strategy Recommendations
+
+**Comprehensive Testing (Recommended):**
+Use all 8 types for complete coverage:
+```yaml
+types:
+  - paraphrase
+  - noise
+  - tone_shift
+  - prompt_injection
+  - encoding_attacks
+  - context_manipulation
+  - length_extremes
+```
+
+**Security-Focused Testing:**
+Emphasize security-critical mutations:
+```yaml
+types:
+  - prompt_injection
+  - encoding_attacks
+  - paraphrase  # Also test semantic understanding
+weights:
+  prompt_injection: 2.0
+  encoding_attacks: 1.5
+```
+
+**UX-Focused Testing:**
+Focus on user experience mutations:
+```yaml
+types:
+  - noise
+  - tone_shift
+  - context_manipulation
+  - paraphrase
+weights:
+  noise: 1.0
+  tone_shift: 1.1
+  context_manipulation: 1.2
+```
+
+**Edge Case Testing:**
+Focus on boundary conditions:
+```yaml
+types:
+  - length_extremes
+  - encoding_attacks
+  - noise
+weights:
+  length_extremes: 1.5
+  encoding_attacks: 1.3
+```
 
 ### Mutation Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `count` | integer | `20` | Mutations per golden prompt (1-100) |
-| `types` | list | all types | Which mutation types to use |
+| `count` | integer | `20` | Mutations per golden prompt |
+| `types` | list | all 8 types | Which mutation types to use |
 | `weights` | object | see below | Scoring weights by type |
 
 ### Default Weights
 
 ```yaml
 weights:
-  paraphrase: 1.0       # Standard difficulty
-  noise: 0.8            # Easier - typos are common
-  tone_shift: 0.9       # Medium difficulty
-  prompt_injection: 1.5 # Harder - security critical
+  paraphrase: 1.0              # Standard difficulty
+  noise: 0.8                   # Easier - typos are common
+  tone_shift: 0.9             # Medium difficulty
+  prompt_injection: 1.5       # Harder - security critical
+  encoding_attacks: 1.3        # Harder - security and parsing
+  context_manipulation: 1.1   # Medium-hard - context extraction
+  length_extremes: 1.2         # Medium-hard - edge cases
+  custom: 1.0                  # Standard difficulty
 ```
 
 Higher weights mean:

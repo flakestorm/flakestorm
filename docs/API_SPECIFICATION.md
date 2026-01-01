@@ -159,16 +159,41 @@ adapter = create_agent_adapter(config.agent)
 ```python
 from flakestorm import MutationType
 
-MutationType.PARAPHRASE       # Semantic rewrites
-MutationType.NOISE            # Typos and errors
-MutationType.TONE_SHIFT       # Aggressive tone
-MutationType.PROMPT_INJECTION # Adversarial attacks
+MutationType.PARAPHRASE            # Semantic rewrites
+MutationType.NOISE                 # Typos and errors
+MutationType.TONE_SHIFT            # Aggressive tone
+MutationType.PROMPT_INJECTION      # Adversarial attacks
+MutationType.ENCODING_ATTACKS      # Encoded inputs (Base64, Unicode, URL)
+MutationType.CONTEXT_MANIPULATION  # Context manipulation
+MutationType.LENGTH_EXTREMES       # Edge cases (empty/long inputs)
+MutationType.CUSTOM                # User-defined templates
 
 # Properties
 MutationType.PARAPHRASE.display_name    # "Paraphrase"
 MutationType.PARAPHRASE.default_weight  # 1.0
 MutationType.PARAPHRASE.description     # "Rewrite using..."
 ```
+
+**Mutation Types Overview:**
+
+| Type | Description | Default Weight | When to Use |
+|------|-------------|----------------|-------------|
+| `PARAPHRASE` | Semantically equivalent rewrites | 1.0 | Test semantic understanding |
+| `NOISE` | Typos and spelling errors | 0.8 | Test input robustness |
+| `TONE_SHIFT` | Aggressive/impatient phrasing | 0.9 | Test emotional resilience |
+| `PROMPT_INJECTION` | Adversarial attack attempts | 1.5 | Test security |
+| `ENCODING_ATTACKS` | Base64, Unicode, URL encoding | 1.3 | Test parser robustness and security |
+| `CONTEXT_MANIPULATION` | Adding/removing/reordering context | 1.1 | Test context extraction |
+| `LENGTH_EXTREMES` | Empty, minimal, or very long inputs | 1.2 | Test boundary conditions |
+| `CUSTOM` | User-defined mutation templates | 1.0 | Test domain-specific scenarios |
+
+**Mutation Strategy:**
+
+Choose mutation types based on your testing goals:
+- **Comprehensive**: Use all 8 types for complete coverage
+- **Security-focused**: Emphasize `PROMPT_INJECTION`, `ENCODING_ATTACKS`
+- **UX-focused**: Emphasize `NOISE`, `TONE_SHIFT`, `CONTEXT_MANIPULATION`
+- **Edge case testing**: Emphasize `LENGTH_EXTREMES`, `ENCODING_ATTACKS`
 
 #### Mutation
 
