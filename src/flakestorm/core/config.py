@@ -259,6 +259,17 @@ class FlakeStormConfig(BaseModel):
         default_factory=AdvancedConfig, description="Advanced configuration"
     )
 
+    @model_validator(mode="after")
+    def validate_invariants(self) -> FlakeStormConfig:
+        """Ensure at least 3 invariants are configured."""
+        if len(self.invariants) < 3:
+            raise ValueError(
+                f"At least 3 invariants are required, but only {len(self.invariants)} provided. "
+                f"Add more invariants to ensure comprehensive testing. "
+                f"Available types: contains, latency, valid_json, regex, similarity, excludes_pii, refusal_check"
+            )
+        return self
+
     @classmethod
     def from_yaml(cls, content: str) -> FlakeStormConfig:
         """Parse configuration from YAML string."""

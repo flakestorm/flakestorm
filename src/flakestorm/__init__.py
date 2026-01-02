@@ -12,7 +12,7 @@ Example:
     >>> print(f"Robustness Score: {results.robustness_score:.1%}")
 """
 
-__version__ = "0.1.0"
+__version__ = "0.9.0"
 __author__ = "flakestorm Team"
 __license__ = "Apache-2.0"
 

@@ -1,0 +1,27 @@
+# Core LangChain packages (for modern versions 0.3.x+)
+langchain-core>=0.1.0
+langchain-community>=0.1.0
+
+# For older LangChain versions (0.1.x, 0.2.x)
+langchain>=0.1.0
+
+# Google Gemini integration (recommended for real LLM)
+# Install with: pip install langchain-google-genai
+# Or use langchain-community which includes ChatGoogleGenerativeAI
+langchain-google-genai>=1.0.0  # For Google Gemini (recommended)
+
+# flakestorm for testing
+flakestorm>=0.1.0
+
+# Note: This example uses Google Gemini if GOOGLE_AI_API_KEY is set,
+# otherwise falls back to a mock LLM for testing without API keys.
+# 
+# To use Google Gemini:
+# 1. Install: pip install langchain-google-genai
+# 2. Set environment variable: export GOOGLE_AI_API_KEY=your-api-key
+# 
+# Other LLM options you can use:
+# openai>=1.0.0  # For ChatOpenAI
+# anthropic>=0.3.0  # For ChatAnthropic
+# langchain-ollama>=0.1.0  # For ChatOllama (local models)
+

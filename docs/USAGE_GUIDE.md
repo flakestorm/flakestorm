@@ -833,7 +833,7 @@ flakestorm generates adversarial variations of your golden prompts:
 
 ### Invariants (Assertions)
 
-Rules that agent responses must satisfy:
+Rules that agent responses must satisfy. **At least 3 invariants are required** to ensure comprehensive testing.
 
 ```yaml
 invariants:
@@ -853,7 +853,7 @@ invariants:
   - type: latency
     max_ms: 3000
 
-  # Must be valid JSON
+  # Must be valid JSON (only use if your agent returns JSON!)
   - type: valid_json
 
   # Semantic similarity to expected response
@@ -1012,6 +1012,75 @@ When analyzing test results, pay attention to which mutation types are failing:
 - **Encoding Attacks failures**: Parser issue or security vulnerability - investigate
 - **Context Manipulation failures**: Agent can't extract intent - improve context handling
 - **Length Extremes failures**: Boundary condition issue - handle edge cases
+
+### Making Mutations More Aggressive
+
+If you're getting 100% reliability scores or want to stress-test your agent more aggressively, you can make mutations more challenging. This is essential for true chaos engineering.
+
+#### Quick Wins for More Aggressive Testing
+
+**1. Increase Mutation Count:**
+```yaml
+mutations:
+  count: 50  # Maximum allowed (default is 20)
+```
+
+**2. Increase Temperature:**
+```yaml
+model:
+  temperature: 1.2  # Higher = more creative mutations (default is 0.8)
+```
+
+**3. Increase Weights:**
+```yaml
+mutations:
+  weights:
+    prompt_injection: 2.0  # Increase from 1.5
+    encoding_attacks: 1.8   # Increase from 1.3
+    length_extremes: 1.6    # Increase from 1.2
+```
+
+**4. Add Custom Aggressive Mutations:**
+```yaml
+mutations:
+  types:
+    - custom  # Enable custom mutations
+  
+  custom_templates:
+    extreme_encoding: |
+      Multi-layer encoding (Base64 + URL + Unicode): {prompt}
+    extreme_noise: |
+      Extreme typos (15+ errors), leetspeak, random caps: {prompt}
+    nested_injection: |
+      Multi-layered prompt injection attack: {prompt}
+```
+
+**5. Stricter Invariants:**
+```yaml
+invariants:
+  - type: "latency"
+    max_ms: 5000  # Stricter than default 10000
+  - type: "regex"
+    pattern: ".{50,}"  # Require longer responses
+```
+
+#### When to Use Aggressive Mutations
+
+- **Before Production**: Stress-test your agent thoroughly
+- **100% Reliability Scores**: Mutations might be too easy
+- **Security-Critical Agents**: Need maximum fuzzing
+- **Finding Edge Cases**: Discover hidden failure modes
+- **Chaos Engineering**: True stress testing
+
+#### Expected Results
+
+With aggressive mutations, you should see:
+- **Reliability Score**: 70-90% (not 100%)
+- **More Failures**: This is good - you're finding issues
+- **Better Coverage**: More edge cases discovered
+- **Production Ready**: Better prepared for real-world usage
+
+For detailed configuration options, see the [Configuration Guide](../docs/CONFIGURATION_GUIDE.md#making-mutations-more-aggressive).
 
 ---
 
