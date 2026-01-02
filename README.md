@@ -42,6 +42,20 @@ Instead of running one test case, Flakestorm takes a single "Golden Prompt", gen
 - ✅ **Local-First**: Uses Ollama with Qwen 3 8B for free testing
 - ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
 
+## Demo
+
+### flakestorm in Action
+
+![flakestorm Demo](flakestorm_demo.gif)
+
+*Watch flakestorm generate mutations and test your agent in real-time*
+
+### Test Report
+
+![flakestorm Test Report](flakestorm_test_reporting.gif)
+
+*Interactive HTML reports with detailed failure analysis and recommendations*
+
 ## Quick Start
 
 ### Installation Order
@@ -97,7 +111,11 @@ sudo apt install ollama
 # Windows: Starts automatically as a service
 
 # In another terminal, pull the model
-ollama pull qwen3:8b
+# Choose based on your RAM:
+# - 8GB RAM: ollama pull tinyllama:1.1b or gemma2:2b
+# - 16GB RAM: ollama pull qwen2.5:3b (recommended)
+# - 32GB+ RAM: ollama pull qwen2.5-coder:7b (best quality)
+ollama pull qwen2.5:3b
 ```
 
 **Troubleshooting:** If you get `syntax error: <!doctype html>` or `command not found` when running `ollama` commands:
@@ -194,7 +212,9 @@ agent:
 
 model:
   provider: "ollama"
-  name: "qwen3:8b"
+  # Choose model based on your RAM: 8GB (tinyllama:1.1b), 16GB (qwen2.5:3b), 32GB+ (qwen2.5-coder:7b)
+  # See docs/USAGE_GUIDE.md for full model recommendations
+  name: "qwen2.5:3b"
   base_url: "http://localhost:11434"
 
 mutations:

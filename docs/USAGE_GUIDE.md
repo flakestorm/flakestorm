@@ -258,6 +258,57 @@ ollama pull qwen2.5-coder:7b
 ollama run qwen2.5-coder:7b "Hello, world!"
 ```
 
+### Choosing the Right Model for Your System
+
+FlakeStorm uses local LLMs to generate mutations. Choose a model that fits your system's RAM and performance requirements:
+
+| System RAM | Recommended Model | Model Size | Speed | Quality | Use Case |
+|------------|-------------------|------------|-------|---------|----------|
+| **4-8 GB** | `tinyllama:1.1b` | ~700 MB | ⚡⚡⚡ Very Fast | ⭐⭐ Basic | Quick testing, CI/CD |
+| **8-16 GB** | `gemma2:2b` | ~1.4 GB | ⚡⚡ Fast | ⭐⭐⭐ Good | Balanced performance |
+| **8-16 GB** | `phi3:mini` | ~2.3 GB | ⚡⚡ Fast | ⭐⭐⭐ Good | Microsoft's efficient model |
+| **16-32 GB** | `qwen2.5:3b` | ~2.0 GB | ⚡⚡ Fast | ⭐⭐⭐⭐ Very Good | Recommended for most users |
+| **16-32 GB** | `gemma2:9b` | ~5.4 GB | ⚡ Moderate | ⭐⭐⭐⭐ Very Good | Better quality mutations |
+| **32+ GB** | `qwen2.5-coder:7b` | ~4.4 GB | ⚡ Moderate | ⭐⭐⭐⭐⭐ Excellent | Best for code/structured prompts |
+| **32+ GB** | `qwen2.5:7b` | ~4.4 GB | ⚡ Moderate | ⭐⭐⭐⭐⭐ Excellent | Best overall quality |
+| **64+ GB** | `qwen2.5:14b` | ~8.9 GB | 🐌 Slower | ⭐⭐⭐⭐⭐ Excellent | Maximum quality (overkill for most) |
+
+**Quick Recommendations:**
+
+- **Minimum viable (8GB RAM)**: `tinyllama:1.1b` or `gemma2:2b`
+- **Recommended (16GB+ RAM)**: `qwen2.5:3b` or `gemma2:9b`
+- **Best quality (32GB+ RAM)**: `qwen2.5-coder:7b` or `qwen2.5:7b`
+
+**Pull your chosen model:**
+
+```bash
+# For 8GB RAM systems
+ollama pull tinyllama:1.1b
+# or
+ollama pull gemma2:2b
+
+# For 16GB RAM systems (recommended)
+ollama pull qwen2.5:3b
+# or
+ollama pull gemma2:9b
+
+# For 32GB+ RAM systems (best quality)
+ollama pull qwen2.5-coder:7b
+# or
+ollama pull qwen2.5:7b
+```
+
+**Update your `flakestorm.yaml` to use your chosen model:**
+
+```yaml
+model:
+  provider: "ollama"
+  name: "qwen2.5:3b"  # Change to your chosen model
+  base_url: "http://localhost:11434"
+```
+
+**Note:** Smaller models are faster but may produce less diverse mutations. Larger models produce higher quality mutations but require more RAM and are slower. For most users, `qwen2.5:3b` or `gemma2:9b` provides the best balance.
+
 ### Step 3: Create Virtual Environment and Install flakestorm
 
 **CRITICAL: Python 3.10+ Required!**
@@ -375,10 +426,22 @@ maturin build --release
 # 4. Remove any old wheels (if they exist)
 rm -f ../target/wheels/entropix_rust-*.whl  # Remove old wheels with wrong name
 
-# 5. Install the new wheel (use specific pattern to avoid old wheels)
-pip install ../target/wheels/flakestorm_rust-*.whl
+# 5. List available wheel files to get the exact filename
+# On Linux/macOS:
+ls ../target/wheels/flakestorm_rust-*.whl
+# On Windows (PowerShell):
+# Get-ChildItem ..\target\wheels\flakestorm_rust-*.whl
 
-# 6. Verify installation
+# 6. Install the wheel using the FULL filename (wildcard pattern may not work)
+# Copy the exact filename from step 5 and use it here:
+# Example for Windows:
+# pip install ../target/wheels/flakestorm_rust-0.1.0-cp311-cp311-win_amd64.whl
+# Example for Linux:
+# pip install ../target/wheels/flakestorm_rust-0.1.0-cp311-cp311-manylinux_2_34_x86_64.whl
+# Example for macOS:
+# pip install ../target/wheels/flakestorm_rust-0.1.0-cp311-cp311-macosx_10_9_x86_64.whl
+
+# 7. Verify installation
 python -c "import flakestorm_rust; print('Rust extension installed successfully!')"
 ```
 
@@ -994,17 +1057,22 @@ mutations:
     length_extremes: 1.2
 
 # =============================================================================
-# LLM CONFIGURATION (for mutation generation)
+# MODEL CONFIGURATION (for mutation generation)
 # =============================================================================
-llm:
-  # Ollama model to use
-  model: "qwen2.5-coder:7b"
+model:
+  # Model provider: "ollama" (default)
+  provider: "ollama"
+
+  # Model name (must be pulled in Ollama first)
+  # See "Choosing the Right Model for Your System" section above for recommendations
+  # based on your RAM: 8GB (tinyllama:1.1b), 16GB (qwen2.5:3b), 32GB+ (qwen2.5-coder:7b)
+  name: "qwen2.5-coder:7b"
 
   # Ollama server URL
-  host: "http://localhost:11434"
+  base_url: "http://localhost:11434"
 
-  # Generation temperature (higher = more creative mutations)
-  temperature: 0.8
+  # Optional: Generation temperature (higher = more creative mutations)
+  # temperature: 0.8
 
 # =============================================================================
 # INVARIANTS (ASSERTIONS)

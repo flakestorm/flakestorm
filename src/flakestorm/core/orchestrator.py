@@ -26,7 +26,7 @@ from rich.progress import (
 )
 
 # Configuration limits for local hardware constraints
-MAX_MUTATIONS_PER_RUN = 50
+MAX_MUTATIONS_PER_RUN = 200
 PARALLEL_EXECUTION_ENABLED = False  # Sequential execution for local hardware
 
 if TYPE_CHECKING:

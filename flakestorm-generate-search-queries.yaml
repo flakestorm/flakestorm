@@ -34,7 +34,7 @@ agent:
 # Recommended for 8GB RAM: qwen2.5:1.5b (fastest), tinyllama (smallest), or phi3:mini (best quality)
 model:
   provider: "ollama"
-  name: "tinyllama"  # Small, fast model optimized for 8GB RAM
+  name: "gemma3:1b"  # Small, fast model optimized for 8GB RAM
   base_url: "http://localhost:11434"
 
 # =============================================================================
@@ -42,7 +42,7 @@ model:
 # =============================================================================
 mutations:
   # Number of mutations to generate per golden prompt
-  count: 3
+  count: 20
 
   # Types of mutations to apply
   types:
