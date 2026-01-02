@@ -52,7 +52,15 @@ Instead of running one test case, Flakestorm takes a single "Golden Prompt", gen
 
 ### Test Report
 
-![flakestorm Test Report](flakestorm_test_reporting.gif)
+![flakestorm Test Report 1](flakestorm_report1.png)
+
+![flakestorm Test Report 2](flakestorm_report2.png)
+
+![flakestorm Test Report 3](flakestorm_report3.png)
+
+![flakestorm Test Report 4](flakestorm_report4.png)
+
+![flakestorm Test Report 5](flakestorm_report5.png)
 
 *Interactive HTML reports with detailed failure analysis and recommendations*
 
