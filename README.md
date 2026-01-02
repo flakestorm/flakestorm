@@ -187,7 +187,12 @@ pip install --upgrade pip
 
 # 9. Install flakestorm
 pip install flakestorm
+
+# 10. (Optional) Install Rust extension for 80x+ performance boost
+pip install flakestorm_rust
 ```
+
+**Note:** The Rust extension (`flakestorm_rust`) is completely optional. flakestorm works perfectly fine without it, but installing it provides 80x+ performance improvements for scoring operations. It's available on PyPI and automatically installs the correct wheel for your platform.
 
 **Troubleshooting:** If you get `Package requires a different Python: 3.9.6 not in '>=3.10'`:
 - Your venv is still using Python 3.9 even though Python 3.11 is installed
@@ -198,9 +203,11 @@ pip install flakestorm
 
 ```bash
 pipx install flakestorm
+# Optional: Install Rust extension for performance
+pipx inject flakestorm flakestorm_rust
 ```
 
-**Note:** Requires Python 3.10 or higher. On macOS, Python environments are externally managed, so using a virtual environment is required. Ollama runs independently and doesn't need to be in your virtual environment.
+**Note:** Requires Python 3.10 or higher. On macOS, Python environments are externally managed, so using a virtual environment is required. Ollama runs independently and doesn't need to be in your virtual environment. The Rust extension (`flakestorm_rust`) is optional but recommended for better performance.
 
 ### Initialize Configuration
 

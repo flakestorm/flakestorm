@@ -377,13 +377,16 @@ pip install --upgrade pip
 pip --version
 
 # 9. Now install flakestorm
-# From PyPI (when published)
+# From PyPI (recommended)
 pip install flakestorm
 
+# 10. (Optional) Install Rust extension for 80x+ performance boost
+pip install flakestorm_rust
+
 # From source (development)
-git clone https://github.com/flakestorm/flakestorm.git
-cd flakestorm
-pip install -e ".[dev]"
+# git clone https://github.com/flakestorm/flakestorm.git
+# cd flakestorm
+# pip install -e ".[dev]"
 ```
 
 **Note:** Ollama is installed at the system level and doesn't need to be in your virtual environment. The virtual environment is only for Python packages (flakestorm and its dependencies).
@@ -408,7 +411,27 @@ python3 --version  # Should be 3.10 or higher
 
 ### Step 4: (Optional) Install Rust Extension
 
-For 80x+ performance improvement on scoring:
+For 80x+ performance improvement on scoring, install the Rust extension. You have two options:
+
+#### Option 1: Install from PyPI (Recommended - Easiest)
+
+```bash
+# 1. Make sure virtual environment is activated
+source venv/bin/activate  # If not already activated
+which pip  # Should show: .../venv/bin/pip
+
+# 2. Install from PyPI (automatically downloads the correct wheel for your platform)
+pip install flakestorm_rust
+
+# 3. Verify installation
+python -c "import flakestorm_rust; print('Rust extension installed successfully!')"
+```
+
+**That's it!** The Rust extension is now installed and flakestorm will automatically use it for faster performance.
+
+#### Option 2: Build from Source (For Development)
+
+If you want to build the Rust extension from source (for development or if PyPI doesn't have a wheel for your platform):
 
 ```bash
 # 1. CRITICAL: Make sure virtual environment is activated
@@ -444,6 +467,8 @@ ls ../target/wheels/flakestorm_rust-*.whl
 # 7. Verify installation
 python -c "import flakestorm_rust; print('Rust extension installed successfully!')"
 ```
+
+**Note:** The Rust extension is completely optional. flakestorm works perfectly fine without it, just slower. The extension provides significant performance improvements for scoring operations.
 
 ### Verify Installation
 
