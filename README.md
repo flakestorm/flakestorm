@@ -162,6 +162,10 @@ For now, the local execution path gives you full control and privacy. As we buil
 - [📦 Publishing Guide](docs/PUBLISHING.md) - How to publish to PyPI
 - [🤝 Contributing](docs/CONTRIBUTING.md) - How to contribute
 
+### Troubleshooting
+- [🔧 Fix Installation Issues](FIX_INSTALL.md) - Resolve `ModuleNotFoundError: No module named 'flakestorm.reports'`
+- [🔨 Fix Build Issues](BUILD_FIX.md) - Resolve `pip install .` vs `pip install -e .` problems
+
 ### Reference
 - [📋 API Specification](docs/API_SPECIFICATION.md) - API reference
 - [🧪 Testing Guide](docs/TESTING_GUIDE.md) - How to run and write tests
