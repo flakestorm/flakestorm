@@ -126,12 +126,6 @@ The result: You know exactly how your agent will behave under stress before user
 - ✅ **Local-First**: Uses Ollama with Qwen 3 8B for free testing
 - ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
 
-## Local Execution (Advanced / Power Users)
-
-For full local execution with mutation generation, you'll need to set up Ollama and configure your Python environment. This section covers the complete setup process for users who want to run everything locally without external dependencies.
-
-> **Quick Setup**: For detailed installation instructions, troubleshooting, and configuration options, see the [Usage Guide](docs/USAGE_GUIDE.md). The guide includes step-by-step instructions for Ollama installation, Python environment setup, model selection, and advanced configuration.
-
 ## Toward a Zero-Setup Path
 
 We're working on making Flakestorm even easier to use. Future improvements include:
