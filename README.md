@@ -153,7 +153,6 @@ For now, the local execution path gives you full control and privacy. As we buil
 ### For Developers
 - [🏗️ Architecture & Modules](docs/MODULES.md) - How the code works
 - [❓ Developer FAQ](docs/DEVELOPER_FAQ.md) - Q&A about design decisions
-- [📦 Publishing Guide](docs/PUBLISHING.md) - How to publish to PyPI
 - [🤝 Contributing](docs/CONTRIBUTING.md) - How to contribute
 
 ### Troubleshooting
