@@ -100,7 +100,7 @@ The result: You know exactly how your agent will behave under stress before user
 
 ## Toward a Zero-Setup Path
 
-We're working on making Flakestorm even easier to use. Future improvements include:
+ Future improvements include:
 
 - **Cloud-hosted mutation generation**: No need to install Ollama locally
 - **One-command setup**: Automated installation and configuration
