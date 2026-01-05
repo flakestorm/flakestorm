@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>The Agent Reliability Engine</strong><br>
-  <em>Chaos Engineering for AI Agents</em>
+  <em>Chaos Engineering for Production AI Agents</em>
 </p>
 
 <p align="center">
@@ -20,26 +20,36 @@
 
 **The "Happy Path" Fallacy**: Current AI development tools focus on getting an agent to work *once*. Developers tweak prompts until they get a correct answer, declare victory, and ship.
 
-**The Reality**: LLMs are non-deterministic. An agent that works on Monday with `temperature=0.7` might fail on Tuesday. Users don't follow "Happy Paths" — they make typos, they're aggressive, they lie, and they attempt prompt injections.
+**The Reality**: LLMs are non-deterministic. An agent that works on Monday with `temperature=0.7` might fail on Tuesday. Production agents face real users who make typos, get aggressive, and attempt prompt injections. Real traffic exposes failures that happy-path testing misses.
 
 **The Void**:
 - **Observability Tools** (LangSmith) tell you *after* the agent failed in production
 - **Eval Libraries** (RAGAS) focus on academic scores rather than system reliability
+- **CI Pipelines** lack chaos testing — agents ship untested against adversarial inputs
 - **Missing Link**: A tool that actively *attacks* the agent to prove robustness before deployment
 
 ## The Solution
 
-**Flakestorm** is a local-first testing engine that applies **Chaos Engineering** principles to AI Agents.
+**Flakestorm** is a chaos testing layer for production AI agents. It applies **Chaos Engineering** principles to systematically test how your agents behave under adversarial inputs before real users encounter them.
 
-Instead of running one test case, Flakestorm takes a single "Golden Prompt", generates adversarial mutations (semantic variations, noise injection, hostile tone, prompt injections), runs them against your agent, and calculates a **Robustness Score**.
+Instead of running one test case, Flakestorm takes a single "Golden Prompt", generates adversarial mutations (semantic variations, noise injection, hostile tone, prompt injections), runs them against your agent, and calculates a **Robustness Score**. Run it before deploy, in CI, or against production-like environments.
 
 > **"If it passes Flakestorm, it won't break in Production."**
+
+## Who Flakestorm Is For
+
+- **Teams shipping AI agents to production** — Catch failures before users do
+- **Engineers running agents behind APIs** — Test against real-world abuse patterns
+- **Teams already paying for LLM APIs** — Reduce regressions and production incidents
+- **CI/CD pipelines** — Automated reliability gates before deployment
+
+Flakestorm is built for production-grade agents handling real traffic. While it works great for exploration and hobby projects, it's designed to catch the failures that matter when agents are deployed at scale.
 
 ## Features
 
 - ✅ **8 Core Mutation Types**: Comprehensive robustness testing covering semantic, input, security, and edge cases
 - ✅ **Invariant Assertions**: Deterministic checks, semantic similarity, basic safety
-- ✅ **Local-First**: Uses Ollama with Qwen 3 8B for free testing
+- ✅ **CI/CD Ready**: Run in pipelines with exit codes and score thresholds
 - ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
 
 ## Demo
@@ -66,7 +76,9 @@ Instead of running one test case, Flakestorm takes a single "Golden Prompt", gen
 
 ## Quick Start
 
-### Installation Order
+> **Note**: This local path is great for quick exploration. Production teams typically run Flakestorm in CI or cloud-based setups. See the [Usage Guide](docs/USAGE_GUIDE.md) for production deployment patterns.
+
+### Local Installation (OSS)
 
 1. **Install Ollama first** (system-level service)
 2. **Create virtual environment** (for Python packages)
@@ -75,7 +87,7 @@ Instead of running one test case, Flakestorm takes a single "Golden Prompt", gen
 
 ### Step 1: Install Ollama (System-Level)
 
-FlakeStorm uses [Ollama](https://ollama.ai) for local model inference. Install this first:
+For local execution, FlakeStorm uses [Ollama](https://ollama.ai) for mutation generation. This is an implementation detail for the OSS path — production setups typically use cloud-based mutation services. Install this first:
 
 **macOS Installation:**
 
@@ -361,16 +373,19 @@ agent:
   module: "my_agent:chain"
 ```
 
-## Local Testing
+## CI/CD Integration
 
-For local testing and validation:
+Flakestorm is designed to run in CI pipelines with configurable score thresholds:
+
 ```bash
 # Run with minimum score check
 flakestorm run --min-score 0.9
 
-# Exit with error code if score is too low
+# Exit with error code if score is too low (for CI gates)
 flakestorm run --min-score 0.9 --ci
 ```
+
+For local testing and development, the same commands work without the `--ci` flag.
 
 ## Robustness Score
 
@@ -383,10 +398,20 @@ Where:
 - $D_{passed}$ = Deterministic tests passed
 - $W$ = Weights assigned by mutation difficulty
 
+## Production Deployment
+
+Local execution is ideal for exploration and development. For production agents, Flakestorm is evolving toward a zero-setup, cloud-based workflow that mirrors real deployments. The OSS local path will always remain available for teams who prefer self-hosted solutions.
+
+See the [Usage Guide](docs/USAGE_GUIDE.md) for:
+- Local setup and Ollama configuration
+- Python environment details
+- Production deployment patterns
+- CI/CD integration examples
+
 ## Documentation
 
 ### Getting Started
-- [📖 Usage Guide](docs/USAGE_GUIDE.md) - Complete end-to-end guide
+- [📖 Usage Guide](docs/USAGE_GUIDE.md) - Complete end-to-end guide (includes local setup)
 - [⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md) - All configuration options
 - [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) - How to connect FlakeStorm to your agent
 - [🧪 Test Scenarios](docs/TEST_SCENARIOS.md) - Real-world examples with code
