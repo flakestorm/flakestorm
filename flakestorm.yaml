@@ -1,0 +1,40 @@
+version: '1.0'
+agent:
+  endpoint: http://localhost:8000/invoke
+  type: http
+  timeout: 30000
+  headers: {}
+model:
+  provider: ollama
+  name: qwen3:8b
+  base_url: http://localhost:11434
+  temperature: 0.8
+mutations:
+  count: 20
+  types:
+  - paraphrase
+  - noise
+  - tone_shift
+  - prompt_injection
+  weights:
+    paraphrase: 1.0
+    noise: 0.8
+    tone_shift: 0.9
+    prompt_injection: 1.5
+golden_prompts:
+- Book a flight to Paris for next Monday
+- What's my account balance?
+invariants:
+- type: latency
+  max_ms: 2000
+  threshold: 0.8
+  dangerous_prompts: true
+- type: valid_json
+  threshold: 0.8
+  dangerous_prompts: true
+output:
+  format: html
+  path: ./reports
+advanced:
+  concurrency: 10
+  retries: 2

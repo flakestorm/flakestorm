@@ -116,7 +116,6 @@ docs/*
 !docs/TEST_SCENARIOS.md
 !docs/MODULES.md
 !docs/DEVELOPER_FAQ.md
-!docs/PUBLISHING.md
 !docs/CONTRIBUTING.md
 !docs/API_SPECIFICATION.md
 !docs/TESTING_GUIDE.md

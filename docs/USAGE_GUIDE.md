@@ -870,13 +870,23 @@ invariants:
 
 ### Robustness Score
 
-A number from 0.0 to 1.0 indicating how reliable your agent is:
+A number from 0.0 to 1.0 indicating how reliable your agent is.
 
+The Robustness Score is calculated as:
+
+$$R = \frac{W_s \cdot S_{passed} + W_d \cdot D_{passed}}{N_{total}}$$
+
+Where:
+- $S_{passed}$ = Semantic variations passed
+- $D_{passed}$ = Deterministic tests passed
+- $W$ = Weights assigned by mutation difficulty
+
+**Simplified formula:**
 ```
 Score = (Weighted Passed Tests) / (Total Weighted Tests)
 ```
 
-Weights by mutation type:
+**Weights by mutation type:**
 - `prompt_injection`: 1.5 (harder to defend against)
 - `encoding_attacks`: 1.3 (security and parsing critical)
 - `length_extremes`: 1.2 (edge cases important)
@@ -1001,6 +1011,20 @@ types:
   - noise
 ```
 
+### Mutation Strategy
+
+The 8 mutation types work together to provide comprehensive robustness testing:
+
+- **Semantic Robustness**: Paraphrase, Context Manipulation
+- **Input Robustness**: Noise, Encoding Attacks, Length Extremes
+- **Security**: Prompt Injection, Encoding Attacks
+- **User Experience**: Tone Shift, Noise, Context Manipulation
+
+For comprehensive testing, use all 8 types. For focused testing:
+- **Security-focused**: Emphasize Prompt Injection, Encoding Attacks
+- **UX-focused**: Emphasize Noise, Tone Shift, Context Manipulation
+- **Edge case testing**: Emphasize Length Extremes, Encoding Attacks
+
 ### Interpreting Results by Mutation Type
 
 When analyzing test results, pay attention to which mutation types are failing:
@@ -1045,7 +1069,7 @@ mutations:
 mutations:
   types:
     - custom  # Enable custom mutations
-  
+
   custom_templates:
     extreme_encoding: |
       Multi-layer encoding (Base64 + URL + Unicode): {prompt}

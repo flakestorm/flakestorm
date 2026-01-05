@@ -36,6 +36,7 @@ Instead of running one test case, Flakestorm takes a single "Golden Prompt", gen
 
 > **"If it passes Flakestorm, it won't break in Production."**
 
+<<<<<<< HEAD
 ## Who Flakestorm Is For
 
 - **Teams shipping AI agents to production** — Catch failures before users do
@@ -51,6 +52,19 @@ Flakestorm is built for production-grade agents handling real traffic. While it 
 - ✅ **Invariant Assertions**: Deterministic checks, semantic similarity, basic safety
 - ✅ **CI/CD Ready**: Run in pipelines with exit codes and score thresholds
 - ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
+=======
+## What You Get in Minutes
+
+Within minutes of setup, Flakestorm gives you:
+
+- **Robustness Score**: A single number (0.0-1.0) that quantifies your agent's reliability
+- **Failure Analysis**: Detailed reports showing exactly which mutations broke your agent and why
+- **Security Insights**: Discover prompt injection vulnerabilities before attackers do
+- **Edge Case Discovery**: Find boundary conditions that would cause production failures
+- **Actionable Reports**: Interactive HTML reports with specific recommendations for improvement
+
+No more guessing if your agent is production-ready. Flakestorm tells you exactly what will break and how to fix it.
+>>>>>>> b57b6e88dc216554442a189c16ad076ec06bb26e
 
 ## Demo
 
@@ -74,76 +88,88 @@ Flakestorm is built for production-grade agents handling real traffic. While it 
 
 *Interactive HTML reports with detailed failure analysis and recommendations*
 
-## Quick Start
+## Try Flakestorm in ~60 Seconds
 
+<<<<<<< HEAD
 > **Note**: This local path is great for quick exploration. Production teams typically run Flakestorm in CI or cloud-based setups. See the [Usage Guide](docs/USAGE_GUIDE.md) for production deployment patterns.
 
 ### Local Installation (OSS)
+=======
+Want to see Flakestorm in action immediately? Here's the fastest path:
+>>>>>>> b57b6e88dc216554442a189c16ad076ec06bb26e
 
-1. **Install Ollama first** (system-level service)
-2. **Create virtual environment** (for Python packages)
-3. **Install flakestorm** (Python package)
-4. **Start Ollama and pull model** (required for mutations)
+1. **Install flakestorm** (if you have Python 3.10+):
+   ```bash
+   pip install flakestorm
+   ```
 
-### Step 1: Install Ollama (System-Level)
+2. **Initialize a test configuration**:
+   ```bash
+   flakestorm init
+   ```
 
+<<<<<<< HEAD
 For local execution, FlakeStorm uses [Ollama](https://ollama.ai) for mutation generation. This is an implementation detail for the OSS path — production setups typically use cloud-based mutation services. Install this first:
+=======
+3. **Point it at your agent** (edit `flakestorm.yaml`):
+   ```yaml
+   agent:
+     endpoint: "http://localhost:8000/invoke"  # Your agent's endpoint
+     type: "http"
+   ```
+>>>>>>> b57b6e88dc216554442a189c16ad076ec06bb26e
 
-**macOS Installation:**
+4. **Run your first test**:
+   ```bash
+   flakestorm run
+   ```
 
-```bash
-# Option 1: Homebrew (recommended)
-brew install ollama
+That's it! You'll get a robustness score and detailed report showing how your agent handles adversarial inputs.
 
-# If you get permission errors, fix permissions first:
-sudo chown -R $(whoami) /Users/imac-frank/Library/Logs/Homebrew
-sudo chown -R $(whoami) /usr/local/Cellar
-sudo chown -R $(whoami) /usr/local/Homebrew
-brew install ollama
+> **Note**: For full local execution (including mutation generation), you'll need Ollama installed. See the [Usage Guide](docs/USAGE_GUIDE.md) for complete setup instructions.
 
-# Option 2: Official Installer
-# Visit https://ollama.ai/download and download the macOS installer (.dmg)
-```
+## How Flakestorm Works
 
-**Windows Installation:**
+Flakestorm follows a simple but powerful workflow:
 
-1. Visit https://ollama.com/download/windows
-2. Download `OllamaSetup.exe`
-3. Run the installer and follow the wizard
-4. Ollama will be installed and start automatically
+1. **You provide "Golden Prompts"** — example inputs that should always work correctly
+2. **Flakestorm generates mutations** — using a local LLM, it creates adversarial variations:
+   - Paraphrases (same meaning, different words)
+   - Typos and noise (realistic user errors)
+   - Tone shifts (frustrated, urgent, aggressive users)
+   - Prompt injections (security attacks)
+   - Encoding attacks (Base64, URL encoding)
+   - Context manipulation (noisy, verbose inputs)
+   - Length extremes (empty, very long inputs)
+3. **Your agent processes each mutation** — Flakestorm sends them to your agent endpoint
+4. **Invariants are checked** — responses are validated against rules you define (latency, content, safety)
+5. **Robustness Score is calculated** — weighted by mutation difficulty and importance
+6. **Report is generated** — interactive HTML showing what passed, what failed, and why
 
-**Linux Installation:**
+The result: You know exactly how your agent will behave under stress before users ever see it.
 
-```bash
-# Using the official install script
-curl -fsSL https://ollama.com/install.sh | sh
+## Features
 
-# Or using package managers (Ubuntu/Debian example):
-sudo apt install ollama
-```
+- ✅ **8 Core Mutation Types**: Comprehensive robustness testing covering semantic, input, security, and edge cases
+- ✅ **Invariant Assertions**: Deterministic checks, semantic similarity, basic safety
+- ✅ **Local-First**: Uses Ollama with Qwen 3 8B for free testing
+- ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
 
-**After installation, start Ollama and pull the model:**
+## Toward a Zero-Setup Path
 
-```bash
-# Start Ollama
-# macOS (Homebrew): brew services start ollama
-# macOS (Manual) / Linux: ollama serve
-# Windows: Starts automatically as a service
+We're working on making Flakestorm even easier to use. Future improvements include:
 
-# In another terminal, pull the model
-# Choose based on your RAM:
-# - 8GB RAM: ollama pull tinyllama:1.1b or gemma2:2b
-# - 16GB RAM: ollama pull qwen2.5:3b (recommended)
-# - 32GB+ RAM: ollama pull qwen2.5-coder:7b (best quality)
-ollama pull qwen2.5:3b
-```
+- **Cloud-hosted mutation generation**: No need to install Ollama locally
+- **One-command setup**: Automated installation and configuration
+- **Docker containers**: Pre-configured environments for instant testing
+- **CI/CD integrations**: Native GitHub Actions, GitLab CI, and more
+- **Comprehensive Reporting**: Dashboard and reports with team collaboration.
 
-**Troubleshooting:** If you get `syntax error: <!doctype html>` or `command not found` when running `ollama` commands:
+The goal: Test your agent's robustness with a single command, no local dependencies required.
 
-```bash
-# 1. Remove the bad binary
-sudo rm /usr/local/bin/ollama
+For now, the local execution path gives you full control and privacy. As we build toward zero-setup, you'll always have the option to run everything locally.
 
+<<<<<<< HEAD
 # 2. Find Homebrew's Ollama location
 brew --prefix ollama  # Shows /usr/local/opt/ollama or /opt/homebrew/opt/ollama
 
@@ -397,6 +423,8 @@ Where:
 - $S_{passed}$ = Semantic variations passed
 - $D_{passed}$ = Deterministic tests passed
 - $W$ = Weights assigned by mutation difficulty
+=======
+>>>>>>> b57b6e88dc216554442a189c16ad076ec06bb26e
 
 ## Production Deployment
 
@@ -420,8 +448,11 @@ See the [Usage Guide](docs/USAGE_GUIDE.md) for:
 ### For Developers
 - [🏗️ Architecture & Modules](docs/MODULES.md) - How the code works
 - [❓ Developer FAQ](docs/DEVELOPER_FAQ.md) - Q&A about design decisions
-- [📦 Publishing Guide](docs/PUBLISHING.md) - How to publish to PyPI
 - [🤝 Contributing](docs/CONTRIBUTING.md) - How to contribute
+
+### Troubleshooting
+- [🔧 Fix Installation Issues](FIX_INSTALL.md) - Resolve `ModuleNotFoundError: No module named 'flakestorm.reports'`
+- [🔨 Fix Build Issues](BUILD_FIX.md) - Resolve `pip install .` vs `pip install -e .` problems
 
 ### Reference
 - [📋 API Specification](docs/API_SPECIFICATION.md) - API reference
