@@ -11,13 +11,13 @@ We're upgrading Flakestorm's core detection engine with a high-performance Rust 
 #### **110+ Prompt Injection Patterns**
 - **10 Categories**: Direct Override, Role Manipulation, DAN/Jailbreak, Context Injection, Instruction Override, System Prompt Leakage, Output Format Manipulation, Multi-turn Attacks, Encoding Bypasses, and Advanced Evasion Techniques
 - **Hybrid Detection**: Aho-Corasick algorithm + Regex matching for <50ms detection latency
-- **Pattern Database**: Comprehensive collection from `veraxiv-core/patterns/prompt-injection-patterns.toml`
+- **Pattern Database**: Comprehensive collection of patterns
 - **Real-time Updates**: Pattern database updates without engine restarts
 
 #### **52+ PII Detection Patterns**
 - **8 Categories**: Identification (SSN, Passport, Driver's License), Financial (Credit Cards, Bank Accounts, IBAN), Contact (Email, Phone, Address), Health (Medical Records, Insurance IDs), Location (GPS, IP Addresses), Biometric (Fingerprints, Face Recognition), Credentials (Passwords, API Keys, Tokens), and Sensitive Data (Tax IDs, Social Security Numbers)
 - **Severity-Weighted Scoring**: Each pattern includes severity levels (Critical, High, Medium, Low) with validation functions
-- **Pattern Database**: From `veraxiv-core/patterns/pii-detection-patterns.toml`
+- **Pattern Database**: Comprehensive collection of patterns
 - **Compliance Ready**: GDPR, HIPAA, PCI-DSS pattern coverage
 
 #### **Performance Improvements**
