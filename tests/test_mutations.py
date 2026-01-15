@@ -12,7 +12,8 @@ class TestMutationType:
     """Tests for MutationType enum."""
 
     def test_mutation_type_values(self):
-        """Test mutation type string values."""
+        """Test mutation type string values for all 24 types."""
+        # Core prompt-level attacks (8)
         assert MutationType.PARAPHRASE.value == "paraphrase"
         assert MutationType.NOISE.value == "noise"
         assert MutationType.TONE_SHIFT.value == "tone_shift"
@@ -22,8 +23,37 @@ class TestMutationType:
         assert MutationType.LENGTH_EXTREMES.value == "length_extremes"
         assert MutationType.CUSTOM.value == "custom"
 
+        # Advanced prompt-level attacks (7)
+        assert MutationType.MULTI_TURN_ATTACK.value == "multi_turn_attack"
+        assert MutationType.ADVANCED_JAILBREAK.value == "advanced_jailbreak"
+        assert (
+            MutationType.SEMANTIC_SIMILARITY_ATTACK.value
+            == "semantic_similarity_attack"
+        )
+        assert MutationType.FORMAT_POISONING.value == "format_poisoning"
+        assert MutationType.LANGUAGE_MIXING.value == "language_mixing"
+        assert MutationType.TOKEN_MANIPULATION.value == "token_manipulation"
+        assert MutationType.TEMPORAL_ATTACK.value == "temporal_attack"
+
+        # System/Network-level attacks (9)
+        assert MutationType.HTTP_HEADER_INJECTION.value == "http_header_injection"
+        assert MutationType.PAYLOAD_SIZE_ATTACK.value == "payload_size_attack"
+        assert MutationType.CONTENT_TYPE_CONFUSION.value == "content_type_confusion"
+        assert (
+            MutationType.QUERY_PARAMETER_POISONING.value == "query_parameter_poisoning"
+        )
+        assert MutationType.REQUEST_METHOD_ATTACK.value == "request_method_attack"
+        assert MutationType.PROTOCOL_LEVEL_ATTACK.value == "protocol_level_attack"
+        assert MutationType.RESOURCE_EXHAUSTION.value == "resource_exhaustion"
+        assert (
+            MutationType.CONCURRENT_REQUEST_PATTERN.value
+            == "concurrent_request_pattern"
+        )
+        assert MutationType.TIMEOUT_MANIPULATION.value == "timeout_manipulation"
+
     def test_display_name(self):
-        """Test display name generation."""
+        """Test display name generation for all mutation types."""
+        # Core types
         assert MutationType.PARAPHRASE.display_name == "Paraphrase"
         assert MutationType.TONE_SHIFT.display_name == "Tone Shift"
         assert MutationType.PROMPT_INJECTION.display_name == "Prompt Injection"
@@ -31,14 +61,74 @@ class TestMutationType:
         assert MutationType.CONTEXT_MANIPULATION.display_name == "Context Manipulation"
         assert MutationType.LENGTH_EXTREMES.display_name == "Length Extremes"
 
+        # Advanced types
+        assert MutationType.MULTI_TURN_ATTACK.display_name == "Multi Turn Attack"
+        assert MutationType.ADVANCED_JAILBREAK.display_name == "Advanced Jailbreak"
+        assert (
+            MutationType.SEMANTIC_SIMILARITY_ATTACK.display_name
+            == "Semantic Similarity Attack"
+        )
+        assert MutationType.FORMAT_POISONING.display_name == "Format Poisoning"
+        assert MutationType.LANGUAGE_MIXING.display_name == "Language Mixing"
+        assert MutationType.TOKEN_MANIPULATION.display_name == "Token Manipulation"
+        assert MutationType.TEMPORAL_ATTACK.display_name == "Temporal Attack"
+
+        # System/Network types
+        assert (
+            MutationType.HTTP_HEADER_INJECTION.display_name == "Http Header Injection"
+        )
+        assert MutationType.PAYLOAD_SIZE_ATTACK.display_name == "Payload Size Attack"
+        assert (
+            MutationType.CONTENT_TYPE_CONFUSION.display_name == "Content Type Confusion"
+        )
+        assert (
+            MutationType.QUERY_PARAMETER_POISONING.display_name
+            == "Query Parameter Poisoning"
+        )
+        assert (
+            MutationType.REQUEST_METHOD_ATTACK.display_name == "Request Method Attack"
+        )
+        assert (
+            MutationType.PROTOCOL_LEVEL_ATTACK.display_name == "Protocol Level Attack"
+        )
+        assert MutationType.RESOURCE_EXHAUSTION.display_name == "Resource Exhaustion"
+        assert (
+            MutationType.CONCURRENT_REQUEST_PATTERN.display_name
+            == "Concurrent Request Pattern"
+        )
+        assert MutationType.TIMEOUT_MANIPULATION.display_name == "Timeout Manipulation"
+
     def test_default_weights(self):
-        """Test default weights are assigned."""
+        """Test default weights are assigned for all mutation types."""
+        # Core types
         assert MutationType.PARAPHRASE.default_weight == 1.0
         assert MutationType.PROMPT_INJECTION.default_weight == 1.5
         assert MutationType.NOISE.default_weight == 0.8
         assert MutationType.ENCODING_ATTACKS.default_weight == 1.3
         assert MutationType.CONTEXT_MANIPULATION.default_weight == 1.1
         assert MutationType.LENGTH_EXTREMES.default_weight == 1.2
+        assert MutationType.TONE_SHIFT.default_weight == 0.9
+        assert MutationType.CUSTOM.default_weight == 1.0
+
+        # Advanced types
+        assert MutationType.MULTI_TURN_ATTACK.default_weight == 1.4
+        assert MutationType.ADVANCED_JAILBREAK.default_weight == 2.0
+        assert MutationType.SEMANTIC_SIMILARITY_ATTACK.default_weight == 1.3
+        assert MutationType.FORMAT_POISONING.default_weight == 1.6
+        assert MutationType.LANGUAGE_MIXING.default_weight == 1.2
+        assert MutationType.TOKEN_MANIPULATION.default_weight == 1.5
+        assert MutationType.TEMPORAL_ATTACK.default_weight == 1.1
+
+        # System/Network types
+        assert MutationType.HTTP_HEADER_INJECTION.default_weight == 1.7
+        assert MutationType.PAYLOAD_SIZE_ATTACK.default_weight == 1.4
+        assert MutationType.CONTENT_TYPE_CONFUSION.default_weight == 1.5
+        assert MutationType.QUERY_PARAMETER_POISONING.default_weight == 1.6
+        assert MutationType.REQUEST_METHOD_ATTACK.default_weight == 1.3
+        assert MutationType.PROTOCOL_LEVEL_ATTACK.default_weight == 1.8
+        assert MutationType.RESOURCE_EXHAUSTION.default_weight == 1.5
+        assert MutationType.CONCURRENT_REQUEST_PATTERN.default_weight == 1.4
+        assert MutationType.TIMEOUT_MANIPULATION.default_weight == 1.3
 
 
 class TestMutation:
@@ -137,11 +227,12 @@ class TestMutationTemplates:
     """Tests for MutationTemplates."""
 
     def test_all_types_have_templates(self):
-        """Test that all mutation types have templates."""
+        """Test that all 24 mutation types have templates."""
         templates = MutationTemplates()
 
-        # Test all 8 mutation types
+        # All 24 mutation types
         expected_types = [
+            # Core prompt-level attacks (8)
             MutationType.PARAPHRASE,
             MutationType.NOISE,
             MutationType.TONE_SHIFT,
@@ -150,12 +241,34 @@ class TestMutationTemplates:
             MutationType.CONTEXT_MANIPULATION,
             MutationType.LENGTH_EXTREMES,
             MutationType.CUSTOM,
+            # Advanced prompt-level attacks (7)
+            MutationType.MULTI_TURN_ATTACK,
+            MutationType.ADVANCED_JAILBREAK,
+            MutationType.SEMANTIC_SIMILARITY_ATTACK,
+            MutationType.FORMAT_POISONING,
+            MutationType.LANGUAGE_MIXING,
+            MutationType.TOKEN_MANIPULATION,
+            MutationType.TEMPORAL_ATTACK,
+            # System/Network-level attacks (9)
+            MutationType.HTTP_HEADER_INJECTION,
+            MutationType.PAYLOAD_SIZE_ATTACK,
+            MutationType.CONTENT_TYPE_CONFUSION,
+            MutationType.QUERY_PARAMETER_POISONING,
+            MutationType.REQUEST_METHOD_ATTACK,
+            MutationType.PROTOCOL_LEVEL_ATTACK,
+            MutationType.RESOURCE_EXHAUSTION,
+            MutationType.CONCURRENT_REQUEST_PATTERN,
+            MutationType.TIMEOUT_MANIPULATION,
         ]
+
+        assert len(expected_types) == 24, "Should have exactly 24 mutation types"
 
         for mutation_type in expected_types:
             template = templates.get(mutation_type)
-            assert template is not None
-            assert "{prompt}" in template
+            assert template is not None, f"Template missing for {mutation_type.value}"
+            assert (
+                "{prompt}" in template
+            ), f"Template for {mutation_type.value} missing {{prompt}} placeholder"
 
     def test_format_template(self):
         """Test formatting a template with a prompt."""

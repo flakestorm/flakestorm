@@ -63,7 +63,7 @@ class MutationType(str, Enum):
     LANGUAGE_MIXING = "language_mixing"
     """Multilingual inputs, code-switching, and character set handling."""
 
-    TOKEN_MANIPULATION = "token_manipulation"
+    TOKEN_MANIPULATION = "token_manipulation"  # nosec B105
     """Tokenizer edge cases, special tokens, and token boundary attacks."""
 
     TEMPORAL_ATTACK = "temporal_attack"
@@ -268,7 +268,7 @@ class Mutation:
             # Allow up to 10x original length for length extremes testing
             if len(self.mutated) > len(self.original) * 10:
                 return True  # Very long is valid for this type
-        
+
         # For other types, empty strings are invalid
         if not self.mutated or not self.mutated.strip():
             return False
