@@ -225,9 +225,6 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
   <strong>Tested with Flakestorm</strong><br>
   <img src="https://img.shields.io/badge/tested%20with-flakestorm-brightgreen" alt="Tested with Flakestorm">
 </p>
----
 
-<p align="center">
-<iframe src="https://github.com/sponsors/flakestorm/card" title="Sponsor flakestorm" height="225" width="600" style="border: 0;"></iframe>
-</p>
+❤️ [Sponsor flakestorm on GitHub](https://github.com/sponsors/flakestorm)
 
