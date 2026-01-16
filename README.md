@@ -26,6 +26,9 @@
   </a>
 </p>
 
+❤️ [Sponsor flakestorm on GitHub](https://github.com/sponsors/flakestorm)
+
+
 ---
 
 ## The Problem
@@ -229,7 +232,7 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 
 
-<p align="center">
-❤️ [Sponsor flakestorm on GitHub](https://github.com/sponsors/flakestorm)
-</p>
+ 
+
+ 
 
