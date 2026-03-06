@@ -1,0 +1,129 @@
+# Flakestorm v2.0 — Research Assistant Example
+# Demonstrates: mutation testing, chaos, behavioral contract, replay, ci
+
+version: "2.0"
+
+# -----------------------------------------------------------------------------
+# Agent (HTTP). Start with: python agent.py  (or uvicorn agent:app --port 8790)
+# -----------------------------------------------------------------------------
+agent:
+  endpoint: "http://localhost:8790/invoke"
+  type: "http"
+  method: "POST"
+  request_template: '{"input": "{prompt}"}'
+  response_path: "result"
+  timeout: 15000
+  reset_endpoint: "http://localhost:8790/reset"
+
+# -----------------------------------------------------------------------------
+# Model (for mutation generation only)
+# -----------------------------------------------------------------------------
+model:
+  provider: "ollama"
+  name: "gemma3:1b"
+  base_url: "http://localhost:11434"
+
+# -----------------------------------------------------------------------------
+# Mutations
+# -----------------------------------------------------------------------------
+mutations:
+  count: 5
+  types:
+    - paraphrase
+    - noise
+    - tone_shift
+    - prompt_injection
+
+# -----------------------------------------------------------------------------
+# Golden prompts
+# -----------------------------------------------------------------------------
+golden_prompts:
+  - "What is the capital of France?"
+  - "Summarize the benefits of renewable energy."
+
+# -----------------------------------------------------------------------------
+# Invariants (run invariants)
+# -----------------------------------------------------------------------------
+invariants:
+  - type: latency
+    max_ms: 30000
+  - type: contains
+    value: "source"
+  - type: output_not_empty
+
+# -----------------------------------------------------------------------------
+# V2: Environment Chaos (tool/LLM faults)
+# For HTTP agent, tool_faults with tool "*" apply to the single request to endpoint.
+# -----------------------------------------------------------------------------
+chaos:
+  tool_faults:
+    - tool: "*"
+      mode: error
+      error_code: 503
+      message: "Service Unavailable"
+      probability: 0.3
+  llm_faults:
+    - mode: truncated_response
+      max_tokens: 5
+      probability: 0.2
+
+# -----------------------------------------------------------------------------
+# V2: Behavioral Contract + Chaos Matrix
+# -----------------------------------------------------------------------------
+contract:
+  name: "Research Agent Contract"
+  description: "Must cite source and complete under chaos"
+  invariants:
+    - id: always-cite-source
+      type: regex
+      pattern: "(?i)(source|according to)"
+      severity: critical
+      when: always
+      description: "Must cite a source"
+    - id: completes
+      type: completes
+      severity: high
+      when: always
+      description: "Must return a response"
+    - id: max-latency
+      type: latency
+      max_ms: 60000
+      severity: medium
+      when: always
+  chaos_matrix:
+    - name: "no-chaos"
+      tool_faults: []
+      llm_faults: []
+    - name: "api-outage"
+      tool_faults:
+        - tool: "*"
+          mode: error
+          error_code: 503
+          message: "Service Unavailable"
+
+# -----------------------------------------------------------------------------
+# V2: Replay regression (sessions can reference file or be inline)
+# -----------------------------------------------------------------------------
+replays:
+  sessions:
+    - file: "replays/incident_001.yaml"
+
+# -----------------------------------------------------------------------------
+# V2: Scoring weights (overall = mutation*0.2 + chaos*0.35 + contract*0.35 + replay*0.1)
+# -----------------------------------------------------------------------------
+scoring:
+  mutation: 0.20
+  chaos: 0.35
+  contract: 0.35
+  replay: 0.10
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+output:
+  format: "html"
+  path: "./reports"
+
+advanced:
+  concurrency: 5
+  retries: 2

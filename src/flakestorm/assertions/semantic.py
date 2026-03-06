@@ -107,7 +107,7 @@ class SimilarityChecker(BaseChecker):
         assert embedder is not None  # For type checker
         return embedder
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check semantic similarity to expected response."""
         from flakestorm.core.config import InvariantType
 
@@ -148,4 +148,58 @@ class SimilarityChecker(BaseChecker):
                 type=InvariantType.SIMILARITY,
                 passed=False,
                 details=f"Error computing similarity: {e}",
+            )
+
+
+class BehaviorUnchangedChecker(BaseChecker):
+    """
+    Check that response is semantically similar to baseline (no behavior change under chaos).
+    Baseline can be config.baseline (manual string) or baseline_response (from contract engine).
+    """
+
+    _embedder: LocalEmbedder | None = None
+
+    @property
+    def embedder(self) -> LocalEmbedder:
+        if BehaviorUnchangedChecker._embedder is None:
+            BehaviorUnchangedChecker._embedder = LocalEmbedder()
+        return BehaviorUnchangedChecker._embedder
+
+    def check(
+        self,
+        response: str,
+        latency_ms: float,
+        *,
+        baseline_response: str | None = None,
+        **kwargs: object,
+    ) -> CheckResult:
+        from flakestorm.core.config import InvariantType
+
+        baseline = baseline_response or (self.config.baseline if self.config.baseline != "auto" else None) or ""
+        threshold = self.config.similarity_threshold or 0.75
+
+        if not baseline:
+            return CheckResult(
+                type=InvariantType.BEHAVIOR_UNCHANGED,
+                passed=True,
+                details="No baseline provided (auto baseline not set by runner)",
+            )
+
+        try:
+            similarity = self.embedder.similarity(response, baseline)
+            passed = similarity >= threshold
+            if self.config.negate:
+                passed = not passed
+            details = f"Similarity to baseline {similarity:.1%} {'>=' if passed else '<'} {threshold:.1%}"
+            return CheckResult(
+                type=InvariantType.BEHAVIOR_UNCHANGED,
+                passed=passed,
+                details=details,
+            )
+        except Exception as e:
+            logger.error("Behavior unchanged check failed: %s", e)
+            return CheckResult(
+                type=InvariantType.BEHAVIOR_UNCHANGED,
+                passed=False,
+                details=str(e),
             )

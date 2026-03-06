@@ -65,6 +65,8 @@ class TestOrchestrator:
             AgentConfig,
             AgentType,
             FlakeStormConfig,
+            InvariantConfig,
+            InvariantType,
             MutationConfig,
         )
         from flakestorm.mutations.types import MutationType
@@ -79,7 +81,7 @@ class TestOrchestrator:
                 count=5,
                 types=[MutationType.PARAPHRASE],
             ),
-            invariants=[],
+            invariants=[InvariantConfig(type=InvariantType.LATENCY, max_ms=5000)],
         )
 
     @pytest.fixture

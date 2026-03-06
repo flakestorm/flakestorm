@@ -206,6 +206,8 @@ class TestTestResults:
             AgentConfig,
             AgentType,
             FlakeStormConfig,
+            InvariantConfig,
+            InvariantType,
         )
 
         return FlakeStormConfig(
@@ -214,7 +216,7 @@ class TestTestResults:
                 type=AgentType.HTTP,
             ),
             golden_prompts=["Test"],
-            invariants=[],
+            invariants=[InvariantConfig(type=InvariantType.LATENCY, max_ms=5000)],
         )
 
     @pytest.fixture
@@ -259,6 +261,8 @@ class TestHTMLReportGenerator:
             AgentConfig,
             AgentType,
             FlakeStormConfig,
+            InvariantConfig,
+            InvariantType,
         )
 
         return FlakeStormConfig(
@@ -267,7 +271,7 @@ class TestHTMLReportGenerator:
                 type=AgentType.HTTP,
             ),
             golden_prompts=["Test"],
-            invariants=[],
+            invariants=[InvariantConfig(type=InvariantType.LATENCY, max_ms=5000)],
         )
 
     @pytest.fixture
@@ -360,6 +364,8 @@ class TestJSONReportGenerator:
             AgentConfig,
             AgentType,
             FlakeStormConfig,
+            InvariantConfig,
+            InvariantType,
         )
 
         return FlakeStormConfig(
@@ -368,7 +374,7 @@ class TestJSONReportGenerator:
                 type=AgentType.HTTP,
             ),
             golden_prompts=["Test"],
-            invariants=[],
+            invariants=[InvariantConfig(type=InvariantType.LATENCY, max_ms=5000)],
         )
 
     @pytest.fixture
@@ -452,6 +458,8 @@ class TestTerminalReporter:
             AgentConfig,
             AgentType,
             FlakeStormConfig,
+            InvariantConfig,
+            InvariantType,
         )
 
         return FlakeStormConfig(
@@ -460,7 +468,7 @@ class TestTerminalReporter:
                 type=AgentType.HTTP,
             ),
             golden_prompts=["Test"],
-            invariants=[],
+            invariants=[InvariantConfig(type=InvariantType.LATENCY, max_ms=5000)],
         )
 
     @pytest.fixture

@@ -1,8 +1,8 @@
 """
 Mutation Engine
 
-Core engine for generating adversarial mutations using Ollama.
-Uses local LLMs to create semantically meaningful perturbations.
+Core engine for generating adversarial mutations using configurable LLM backends.
+Supports Ollama (local), OpenAI, Anthropic, and Google (Gemini).
 """
 
 from __future__ import annotations
@@ -11,8 +11,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from ollama import AsyncClient
-
+from flakestorm.mutations.llm_client import BaseLLMClient, get_llm_client
 from flakestorm.mutations.templates import MutationTemplates
 from flakestorm.mutations.types import Mutation, MutationType
 
@@ -24,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 class MutationEngine:
     """
-    Engine for generating adversarial mutations using local LLMs.
+    Engine for generating adversarial mutations using configurable LLM backends.
 
-    Uses Ollama to run a local model (default: Qwen Coder 3 8B) that
-    rewrites prompts according to different mutation strategies.
+    Uses the configured provider (Ollama, OpenAI, Anthropic, Google) to rewrite
+    prompts according to different mutation strategies.
 
     Example:
         >>> engine = MutationEngine(config.model)
@@ -47,45 +46,23 @@ class MutationEngine:
         Initialize the mutation engine.
 
         Args:
-            config: Model configuration
+            config: Model configuration (provider, name, api_key via env only for non-Ollama)
             templates: Optional custom templates
         """
         self.config = config
         self.model = config.name
-        self.base_url = config.base_url
         self.temperature = config.temperature
         self.templates = templates or MutationTemplates()
-
-        # Initialize Ollama client
-        self.client = AsyncClient(host=self.base_url)
+        self._client: BaseLLMClient = get_llm_client(config)
 
     async def verify_connection(self) -> bool:
         """
-        Verify connection to Ollama and model availability.
+        Verify connection to the configured LLM provider and model availability.
 
         Returns:
             True if connection is successful and model is available
         """
-        try:
-            # List available models
-            response = await self.client.list()
-            models = [m.get("name", "") for m in response.get("models", [])]
-
-            # Check if our model is available
-            model_available = any(
-                self.model in m or m.startswith(self.model.split(":")[0])
-                for m in models
-            )
-
-            if not model_available:
-                logger.warning(f"Model {self.model} not found. Available: {models}")
-                return False
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to connect to Ollama: {e}")
-            return False
+        return await self._client.verify_connection()
 
     async def generate_mutations(
         self,
@@ -148,18 +125,11 @@ class MutationEngine:
         formatted_prompt = self.templates.format(mutation_type, seed_prompt)
 
         try:
-            # Call Ollama
-            response = await self.client.generate(
-                model=self.model,
-                prompt=formatted_prompt,
-                options={
-                    "temperature": self.temperature,
-                    "num_predict": 256,  # Limit response length
-                },
+            mutated = await self._client.generate(
+                formatted_prompt,
+                temperature=self.temperature,
+                max_tokens=256,
             )
-
-            # Extract the mutated text
-            mutated = response.get("response", "").strip()
 
             # Clean up the response
             mutated = self._clean_response(mutated, seed_prompt)

@@ -80,16 +80,17 @@ agent:
   endpoint: "http://test:8000/invoke"
 golden_prompts:
   - "Hello world"
+invariants:
+  - type: "latency"
+    max_ms: 5000
 """
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(yaml_content)
             f.flush()
-
-            config = load_config(f.name)
-            assert config.agent.endpoint == "http://test:8000/invoke"
-
-            # Cleanup
-            Path(f.name).unlink()
+            path = f.name
+        config = load_config(path)
+        assert config.agent.endpoint == "http://test:8000/invoke"
+        Path(path).unlink(missing_ok=True)
 
 
 class TestAgentConfig:

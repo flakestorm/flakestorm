@@ -1,0 +1,14 @@
+# Built-in chaos profile: High latency
+name: high_latency
+description: >
+  All calls delayed 10-30s.
+chaos:
+  tool_faults:
+    - tool: "*"
+      mode: slow
+      delay_ms: 20000
+      probability: 1.0
+  llm_faults:
+    - mode: timeout
+      delay_ms: 15000
+      probability: 0.3

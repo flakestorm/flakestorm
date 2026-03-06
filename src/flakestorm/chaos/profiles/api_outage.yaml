@@ -1,0 +1,15 @@
+# Built-in chaos profile: API outage
+# All tools return 503, LLM times out 50% of the time
+name: api_outage
+description: >
+  Simulates complete API outage: all tools return 503,
+  LLM times out 50% of the time.
+chaos:
+  tool_faults:
+    - tool: "*"
+      mode: error
+      error_code: 503
+      message: "Service Unavailable"
+  llm_faults:
+    - mode: timeout
+      probability: 0.5

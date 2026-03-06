@@ -390,6 +390,7 @@ class HTTPAgentAdapter(BaseAgentAdapter):
         timeout: int = 30000,
         headers: dict[str, str] | None = None,
         retries: int = 2,
+        transport: httpx.AsyncBaseTransport | None = None,
     ):
         """
         Initialize the HTTP adapter.
@@ -404,6 +405,7 @@ class HTTPAgentAdapter(BaseAgentAdapter):
             timeout: Request timeout in milliseconds
             headers: Optional custom headers
             retries: Number of retry attempts
+            transport: Optional custom transport (e.g. for chaos injection by match_url)
         """
         self.endpoint = endpoint
         self.method = method.upper()
@@ -414,12 +416,16 @@ class HTTPAgentAdapter(BaseAgentAdapter):
         self.timeout = timeout / 1000  # Convert to seconds
         self.headers = headers or {}
         self.retries = retries
+        self.transport = transport
 
     async def invoke(self, input: str) -> AgentResponse:
         """Send request to HTTP endpoint."""
         start_time = time.perf_counter()
+        client_kw: dict = {"timeout": self.timeout}
+        if self.transport is not None:
+            client_kw["transport"] = self.transport
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with httpx.AsyncClient(**client_kw) as client:
             last_error: Exception | None = None
 
             for attempt in range(self.retries + 1):
@@ -735,3 +741,52 @@ def create_agent_adapter(config: AgentConfig) -> BaseAgentAdapter:
 
     else:
         raise ValueError(f"Unsupported agent type: {config.type}")
+
+
+def create_instrumented_adapter(
+    adapter: BaseAgentAdapter,
+    chaos_config: Any | None = None,
+    replay_session: Any | None = None,
+) -> BaseAgentAdapter:
+    """
+    Wrap an adapter with chaos injection (tool/LLM faults).
+
+    When chaos_config is provided, the returned adapter applies faults
+    when supported (match_url for HTTP, tool registry for Python/LangChain).
+    For type=python with tool_faults, fails loudly if no tool callables/ToolRegistry.
+    """
+    from flakestorm.chaos.interceptor import ChaosInterceptor
+    from flakestorm.chaos.http_transport import ChaosHttpTransport
+
+    if chaos_config and chaos_config.tool_faults:
+        # V2 spec §6.1: Python agent with tool_faults but no tools -> fail loudly
+        if isinstance(adapter, PythonAgentAdapter):
+            raise ValueError(
+                "Tool fault injection requires explicit tool callables or ToolRegistry "
+                "for type: python. Add tools to your config or use type: langchain."
+            )
+        # HTTP: wrap with transport that applies tool_faults (match_url or tool "*")
+        if isinstance(adapter, HTTPAgentAdapter):
+            call_count_ref: list[int] = [0]
+            default_transport = httpx.AsyncHTTPTransport()
+            chaos_transport = ChaosHttpTransport(
+                default_transport, chaos_config, call_count_ref
+            )
+            timeout_ms = int(adapter.timeout * 1000) if adapter.timeout else 30000
+            wrapped_http = HTTPAgentAdapter(
+                endpoint=adapter.endpoint,
+                method=adapter.method,
+                request_template=adapter.request_template,
+                response_path=adapter.response_path,
+                query_params=adapter.query_params,
+                parse_structured_input=adapter.parse_structured_input,
+                timeout=timeout_ms,
+                headers=adapter.headers,
+                retries=adapter.retries,
+                transport=chaos_transport,
+            )
+            return ChaosInterceptor(
+                wrapped_http, chaos_config, replay_session=replay_session
+            )
+
+    return ChaosInterceptor(adapter, chaos_config, replay_session=replay_session)

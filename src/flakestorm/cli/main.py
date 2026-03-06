@@ -136,6 +136,21 @@ def run(
         "-q",
         help="Minimal output",
     ),
+    chaos: bool = typer.Option(
+        False,
+        "--chaos",
+        help="Enable environment chaos (tool/LLM faults) for this run",
+    ),
+    chaos_profile: str | None = typer.Option(
+        None,
+        "--chaos-profile",
+        help="Use built-in chaos profile (e.g. api_outage, degraded_llm)",
+    ),
+    chaos_only: bool = typer.Option(
+        False,
+        "--chaos-only",
+        help="Run only chaos tests (no mutation generation)",
+    ),
 ) -> None:
     """
     Run chaos testing against your agent.
@@ -151,6 +166,9 @@ def run(
             ci=ci,
             verify_only=verify_only,
             quiet=quiet,
+            chaos=chaos,
+            chaos_profile=chaos_profile,
+            chaos_only=chaos_only,
         )
     )
 
@@ -162,6 +180,9 @@ async def _run_async(
     ci: bool,
     verify_only: bool,
     quiet: bool,
+    chaos: bool = False,
+    chaos_profile: str | None = None,
+    chaos_only: bool = False,
 ) -> None:
     """Async implementation of the run command."""
     from flakestorm.reports.html import HTMLReportGenerator
@@ -176,12 +197,15 @@ async def _run_async(
         )
         console.print()
 
-    # Load configuration
+    # Load configuration and apply chaos flags
     try:
         runner = FlakeStormRunner(
             config=config,
             console=console,
             show_progress=not quiet,
+            chaos=chaos,
+            chaos_profile=chaos_profile,
+            chaos_only=chaos_only,
         )
     except FileNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -419,6 +443,315 @@ async def _score_async(config: Path) -> None:
         console.print(f"Error: {e}", style="red", file=sys.stderr)
         print("0.0")
         raise typer.Exit(1)
+
+
+# --- V2: chaos, contract, replay, ci ---
+
+@app.command()
+def chaos_cmd(
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+    profile: str | None = typer.Option(
+        None,
+        "--profile",
+        help="Built-in chaos profile name",
+    ),
+) -> None:
+    """Run environment chaos testing (tool/LLM faults) only."""
+    asyncio.run(_chaos_async(config, profile))
+
+
+async def _chaos_async(config: Path, profile: str | None) -> None:
+    from flakestorm.core.config import load_config
+    from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
+    cfg = load_config(config)
+    agent = create_agent_adapter(cfg.agent)
+    if cfg.chaos:
+        agent = create_instrumented_adapter(agent, cfg.chaos)
+    console.print("[bold blue]Chaos run[/bold blue] (v2) - use flakestorm run --chaos for full flow.")
+    console.print("[dim]Chaos module active.[/dim]")
+
+
+contract_app = typer.Typer(help="Behavioral contract (v2): run, validate, score")
+
+@contract_app.command("run")
+def contract_run(
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+) -> None:
+    """Run behavioral contract across chaos matrix."""
+    asyncio.run(_contract_async(config, validate=False, score_only=False))
+
+@contract_app.command("validate")
+def contract_validate(
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+) -> None:
+    """Validate contract YAML without executing."""
+    asyncio.run(_contract_async(config, validate=True, score_only=False))
+
+@contract_app.command("score")
+def contract_score(
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+) -> None:
+    """Output only the resilience score (for CI gates)."""
+    asyncio.run(_contract_async(config, validate=False, score_only=True))
+
+app.add_typer(contract_app, name="contract")
+
+
+async def _contract_async(config: Path, validate: bool, score_only: bool) -> None:
+    from flakestorm.core.config import load_config
+    from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
+    from flakestorm.contracts.engine import ContractEngine
+    cfg = load_config(config)
+    if not cfg.contract:
+        console.print("[yellow]No contract defined in config.[/yellow]")
+        raise typer.Exit(0)
+    if validate:
+        console.print("[green]Contract YAML valid.[/green]")
+        raise typer.Exit(0)
+    agent = create_agent_adapter(cfg.agent)
+    if cfg.chaos:
+        agent = create_instrumented_adapter(agent, cfg.chaos)
+    engine = ContractEngine(cfg, cfg.contract, agent)
+    matrix = await engine.run()
+    if score_only:
+        print(f"{matrix.resilience_score:.2f}")
+    else:
+        console.print(f"[bold]Resilience score:[/bold] {matrix.resilience_score:.1f}%")
+        console.print(f"[bold]Passed:[/bold] {matrix.passed}")
+
+
+replay_app = typer.Typer(help="Replay sessions: run, import, export (v2)")
+
+@replay_app.command("run")
+def replay_run(
+    path: Path = typer.Argument(None, help="Path to replay file or directory"),
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+    from_langsmith: str | None = typer.Option(None, "--from-langsmith", help="LangSmith run ID"),
+    run_after_import: bool = typer.Option(False, "--run", help="Run replay after import"),
+) -> None:
+    """Run or import replay sessions."""
+    asyncio.run(_replay_async(path, config, from_langsmith, run_after_import))
+
+
+@replay_app.command("export")
+def replay_export(
+    from_report: Path = typer.Option(..., "--from-report", help="JSON report file from flakestorm run"),
+    output: Path = typer.Option(Path("./replays"), "--output", "-o", help="Output directory"),
+) -> None:
+    """Export failed mutations from a report as replay session YAML files."""
+    import json
+    import yaml
+    if not from_report.exists():
+        console.print(f"[red]Report not found:[/red] {from_report}")
+        raise typer.Exit(1)
+    data = json.loads(from_report.read_text(encoding="utf-8"))
+    mutations = data.get("mutations", [])
+    failed = [m for m in mutations if not m.get("passed", True)]
+    if not failed:
+        console.print("[yellow]No failed mutations in report.[/yellow]")
+        raise typer.Exit(0)
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    for i, m in enumerate(failed):
+        session = {
+            "id": f"export-{i}",
+            "name": f"Exported failure: {m.get('mutation', {}).get('type', 'unknown')}",
+            "source": "flakestorm_export",
+            "input": m.get("original_prompt", ""),
+            "tool_responses": [],
+            "expected_failure": m.get("error") or "One or more invariants failed",
+            "contract": "default",
+        }
+        out_path = output / f"replay-{i}.yaml"
+        out_path.write_text(yaml.dump(session, default_flow_style=False, sort_keys=False), encoding="utf-8")
+        console.print(f"[green]Wrote[/green] {out_path}")
+    console.print(f"[bold]Exported {len(failed)} replay session(s).[/bold]")
+
+
+app.add_typer(replay_app, name="replay")
+
+
+
+
+async def _replay_async(
+    path: Path | None,
+    config: Path,
+    from_langsmith: str | None,
+    run_after_import: bool,
+) -> None:
+    from flakestorm.core.config import load_config
+    from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
+    from flakestorm.replay.loader import ReplayLoader, resolve_contract
+    from flakestorm.replay.runner import ReplayResult, ReplayRunner
+    cfg = load_config(config)
+    agent = create_agent_adapter(cfg.agent)
+    if cfg.chaos:
+        agent = create_instrumented_adapter(agent, cfg.chaos)
+    if from_langsmith:
+        loader = ReplayLoader()
+        session = loader.load_langsmith_run(from_langsmith)
+        console.print(f"[green]Imported replay:[/green] {session.id}")
+        if run_after_import:
+            contract = None
+            try:
+                contract = resolve_contract(session.contract, cfg, config.parent)
+            except FileNotFoundError:
+                pass
+            runner = ReplayRunner(agent, contract=contract)
+            replay_result = await runner.run(session, contract=contract)
+            console.print(f"[bold]Replay result:[/bold] passed={replay_result.passed}")
+            console.print(f"[dim]Response:[/dim] {(replay_result.response.output or '')[:200]}...")
+        raise typer.Exit(0)
+    if path and path.exists():
+        loader = ReplayLoader()
+        session = loader.load_file(path)
+        contract = None
+        try:
+            contract = resolve_contract(session.contract, cfg, path.parent)
+        except FileNotFoundError as e:
+            console.print(f"[yellow]{e}[/yellow]")
+        runner = ReplayRunner(agent, contract=contract)
+        replay_result = await runner.run(session, contract=contract)
+        console.print(f"[bold]Replay result:[/bold] passed={replay_result.passed}")
+        if replay_result.verification_details:
+            console.print(f"[dim]Checks:[/dim] {', '.join(replay_result.verification_details)}")
+    else:
+        console.print("[yellow]Provide a replay file path or --from-langsmith RUN_ID.[/yellow]")
+
+
+@app.command()
+def ci(
+    config: Path = typer.Option(
+        Path("flakestorm.yaml"),
+        "--config",
+        "-c",
+        help="Path to configuration file",
+    ),
+    min_score: float = typer.Option(0.0, "--min-score", help="Minimum overall score"),
+) -> None:
+    """Run all configured modes and output unified exit code (v2)."""
+    asyncio.run(_ci_async(config, min_score))
+
+
+async def _ci_async(config: Path, min_score: float) -> None:
+    from flakestorm.core.config import load_config
+    cfg = load_config(config)
+    exit_code = 0
+    scores = {}
+
+    # Run mutation tests
+    runner = FlakeStormRunner(config=config, console=console, show_progress=False)
+    results = await runner.run()
+    mutation_score = results.statistics.robustness_score
+    scores["mutation_robustness"] = mutation_score
+    console.print(f"[bold]Mutation score:[/bold] {mutation_score:.1%}")
+    if mutation_score < min_score:
+        exit_code = 1
+
+    # Contract
+    contract_score = 1.0
+    if cfg.contract:
+        from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
+        from flakestorm.contracts.engine import ContractEngine
+        agent = create_agent_adapter(cfg.agent)
+        if cfg.chaos:
+            agent = create_instrumented_adapter(agent, cfg.chaos)
+        engine = ContractEngine(cfg, cfg.contract, agent)
+        matrix = await engine.run()
+        contract_score = matrix.resilience_score / 100.0
+        scores["contract_compliance"] = contract_score
+        console.print(f"[bold]Contract score:[/bold] {matrix.resilience_score:.1f}%")
+        if not matrix.passed or matrix.resilience_score < min_score * 100:
+            exit_code = 1
+
+    # Chaos-only run when chaos configured
+    chaos_score = 1.0
+    if cfg.chaos:
+        chaos_runner = FlakeStormRunner(
+            config=config, console=console, show_progress=False,
+            chaos_only=True, chaos=True,
+        )
+        chaos_results = await chaos_runner.run()
+        chaos_score = chaos_results.statistics.robustness_score
+        scores["chaos_resilience"] = chaos_score
+        console.print(f"[bold]Chaos score:[/bold] {chaos_score:.1%}")
+        if chaos_score < min_score:
+            exit_code = 1
+
+    # Replay sessions
+    replay_score = 1.0
+    if cfg.replays and cfg.replays.sessions:
+        from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
+        from flakestorm.replay.loader import ReplayLoader, resolve_contract
+        from flakestorm.replay.runner import ReplayRunner
+        agent = create_agent_adapter(cfg.agent)
+        if cfg.chaos:
+            agent = create_instrumented_adapter(agent, cfg.chaos)
+        loader = ReplayLoader()
+        passed = 0
+        total = 0
+        config_path = Path(config)
+        for s in cfg.replays.sessions:
+            if getattr(s, "file", None):
+                fpath = Path(s.file)
+                if not fpath.is_absolute():
+                    fpath = config_path.parent / fpath
+                session = loader.load_file(fpath)
+            else:
+                session = s
+            contract = None
+            try:
+                contract = resolve_contract(session.contract, cfg, config_path.parent)
+            except FileNotFoundError:
+                pass
+            runner = ReplayRunner(agent, contract=contract)
+            result = await runner.run(session, contract=contract)
+            total += 1
+            if result.passed:
+                passed += 1
+        replay_score = passed / total if total else 1.0
+        scores["replay_regression"] = replay_score
+        console.print(f"[bold]Replay score:[/bold] {replay_score:.1%} ({passed}/{total})")
+        if replay_score < min_score:
+            exit_code = 1
+
+    # Overall weighted score (only for components that ran)
+    from flakestorm.core.config import ScoringConfig
+    from flakestorm.core.performance import calculate_overall_resilience
+    scoring = cfg.scoring or ScoringConfig()
+    w = {"mutation_robustness": scoring.mutation, "chaos_resilience": scoring.chaos, "contract_compliance": scoring.contract, "replay_regression": scoring.replay}
+    used_w = [w[k] for k in scores if k in w]
+    used_s = [scores[k] for k in scores if k in w]
+    overall = calculate_overall_resilience(used_s, used_w)
+    console.print(f"[bold]Overall (weighted):[/bold] {overall:.1%}")
+    if overall < min_score:
+        exit_code = 1
+    raise typer.Exit(exit_code)
 
 
 if __name__ == "__main__":

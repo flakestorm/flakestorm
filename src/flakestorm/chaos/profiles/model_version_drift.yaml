@@ -1,0 +1,13 @@
+# Built-in chaos profile: Model version drift (addendum)
+name: model_version_drift
+description: >
+  Simulates silent LLM model version upgrades (field renames, format changes).
+chaos:
+  llm_faults:
+    - mode: response_drift
+      probability: 0.3
+      drift_type: json_field_rename
+      severity: subtle
+    - mode: response_drift
+      probability: 0.2
+      drift_type: format_change

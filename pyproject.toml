@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flakestorm"
-version = "0.9.1"
+version = "2.0.0"
 description = "The Agent Reliability Engine - Chaos Engineering for AI Agents"
 readme = "README.md"
 license = "Apache-2.0"
@@ -65,8 +65,20 @@ semantic = [
 huggingface = [
     "huggingface-hub>=0.19.0",
 ]
+openai = [
+    "openai>=1.0.0",
+]
+anthropic = [
+    "anthropic>=0.18.0",
+]
+google = [
+    "google-generativeai>=0.8.0",
+]
+langsmith = [
+    "langsmith>=0.1.0",
+]
 all = [
-    "flakestorm[dev,semantic,huggingface]",
+    "flakestorm[dev,semantic,huggingface,openai,anthropic,google,langsmith]",
 ]
 
 [project.scripts]

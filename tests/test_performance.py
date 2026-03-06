@@ -16,7 +16,9 @@ _performance = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_performance)
 
 # Re-export functions for tests
+calculate_overall_resilience = _performance.calculate_overall_resilience
 calculate_percentile = _performance.calculate_percentile
+calculate_resilience_matrix_score = _performance.calculate_resilience_matrix_score
 calculate_robustness_score = _performance.calculate_robustness_score
 calculate_statistics = _performance.calculate_statistics
 calculate_weighted_score = _performance.calculate_weighted_score
@@ -268,6 +270,57 @@ class TestCalculateStatistics:
         assert "noise" in by_type
         assert by_type["noise"]["total"] == 1
         assert by_type["noise"]["pass_rate"] == 1.0
+
+
+class TestResilienceMatrixScore:
+    """V2: Contract resilience matrix score (severity-weighted)."""
+
+    def test_empty_returns_100(self):
+        score, overall, critical = calculate_resilience_matrix_score([], [])
+        assert score == 100.0
+        assert overall is True
+        assert critical is False
+
+    def test_all_passed(self):
+        score, overall, critical = calculate_resilience_matrix_score(
+            ["critical", "high"], [True, True]
+        )
+        assert score == 100.0
+        assert overall is True
+        assert critical is False
+
+    def test_severity_weighted_partial(self):
+        # critical=3, high=2, medium=1; one medium failed -> 5/6 * 100
+        score, overall, critical = calculate_resilience_matrix_score(
+            ["critical", "high", "medium"], [True, True, False]
+        )
+        assert abs(score - (5.0 / 6.0) * 100.0) < 0.02
+        assert overall is True
+        assert critical is False
+
+    def test_critical_failed(self):
+        _, overall, critical = calculate_resilience_matrix_score(
+            ["critical"], [False]
+        )
+        assert critical is True
+        assert overall is False
+
+
+class TestOverallResilience:
+    """V2: Overall weighted resilience from component scores."""
+
+    def test_empty_returns_one(self):
+        assert calculate_overall_resilience([], []) == 1.0
+
+    def test_weighted_average(self):
+        # 0.8*0.25 + 1.0*0.25 + 0.5*0.5 = 0.2 + 0.25 + 0.25 = 0.7
+        s = calculate_overall_resilience(
+            [0.8, 1.0, 0.5], [0.25, 0.25, 0.5]
+        )
+        assert abs(s - 0.7) < 0.001
+
+    def test_single_component(self):
+        assert calculate_overall_resilience([0.5], [1.0]) == 0.5
 
 
 class TestRustVsPythonParity:

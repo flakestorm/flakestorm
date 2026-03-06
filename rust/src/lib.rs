@@ -138,6 +138,83 @@ fn string_similarity(s1: &str, s2: &str) -> f64 {
     1.0 - (distance as f64 / max_len as f64)
 }
 
+/// V2: Contract resilience matrix score (addendum §6.3).
+///
+/// severity_weight: critical=3, high=2, medium=1, low=1.
+/// Returns (score_0_100, overall_passed, critical_failed).
+#[pyfunction]
+fn calculate_resilience_matrix_score(
+    severities: Vec<String>,
+    passed: Vec<bool>,
+) -> (f64, bool, bool) {
+    let n = std::cmp::min(severities.len(), passed.len());
+    if n == 0 {
+        return (100.0, true, false);
+    }
+
+    const SEVERITY_WEIGHT: &[(&str, f64)] = &[
+        ("critical", 3.0),
+        ("high", 2.0),
+        ("medium", 1.0),
+        ("low", 1.0),
+    ];
+
+    let weight_for = |s: &str| -> f64 {
+        let lower = s.to_lowercase();
+        SEVERITY_WEIGHT
+            .iter()
+            .find(|(k, _)| *k == lower)
+            .map(|(_, w)| *w)
+            .unwrap_or(1.0)
+    };
+
+    let mut weighted_pass = 0.0;
+    let mut weighted_total = 0.0;
+    let mut critical_failed = false;
+
+    for i in 0..n {
+        let w = weight_for(severities[i].as_str());
+        weighted_total += w;
+        if passed[i] {
+            weighted_pass += w;
+        } else if severities[i].eq_ignore_ascii_case("critical") {
+            critical_failed = true;
+        }
+    }
+
+    let score = if weighted_total == 0.0 {
+        100.0
+    } else {
+        (weighted_pass / weighted_total) * 100.0
+    };
+    let score = (score * 100.0).round() / 100.0;
+    let overall_passed = !critical_failed;
+
+    (score, overall_passed, critical_failed)
+}
+
+/// V2: Overall resilience score from component scores and weights.
+///
+/// Weighted average: sum(scores[i] * weights[i]) / sum(weights[i]).
+/// Used for mutation_robustness, chaos_resilience, contract_compliance, replay_regression.
+#[pyfunction]
+fn calculate_overall_resilience(scores: Vec<f64>, weights: Vec<f64>) -> f64 {
+    let n = std::cmp::min(scores.len(), weights.len());
+    if n == 0 {
+        return 1.0;
+    }
+    let mut sum_w = 0.0;
+    let mut sum_ws = 0.0;
+    for i in 0..n {
+        sum_w += weights[i];
+        sum_ws += scores[i] * weights[i];
+    }
+    if sum_w == 0.0 {
+        return 1.0;
+    }
+    sum_ws / sum_w
+}
+
 /// Python module definition
 #[pymodule]
 fn flakestorm_rust(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -146,6 +223,8 @@ fn flakestorm_rust(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parallel_process_mutations, m)?)?;
     m.add_function(wrap_pyfunction!(levenshtein_distance, m)?)?;
     m.add_function(wrap_pyfunction!(string_similarity, m)?)?;
+    m.add_function(wrap_pyfunction!(calculate_resilience_matrix_score, m)?)?;
+    m.add_function(wrap_pyfunction!(calculate_overall_resilience, m)?)?;
     Ok(())
 }
 
@@ -181,5 +260,29 @@ mod tests {
     fn test_string_similarity() {
         let sim = string_similarity("hello", "hallo");
         assert!(sim > 0.7 && sim < 0.9);
+    }
+
+    #[test]
+    fn test_resilience_matrix_score() {
+        let (score, overall, critical) = calculate_resilience_matrix_score(
+            vec!["critical".into(), "high".into(), "medium".into()],
+            vec![true, true, false],
+        );
+        assert!((score - (3.0 + 2.0) / (3.0 + 2.0 + 1.0) * 100.0).abs() < 0.01);
+        assert!(overall);
+        assert!(!critical);
+
+        let (_, _, critical_fail) = calculate_resilience_matrix_score(
+            vec!["critical".into()],
+            vec![false],
+        );
+        assert!(critical_fail);
+    }
+
+    #[test]
+    fn test_overall_resilience() {
+        let s = calculate_overall_resilience(vec![0.8, 1.0, 0.5], vec![0.25, 0.25, 0.5]);
+        assert!((s - (0.8 * 0.25 + 1.0 * 0.25 + 0.5 * 0.5) / 1.0).abs() < 0.001);
+        assert_eq!(calculate_overall_resilience(vec![], vec![]), 1.0);
     }
 }

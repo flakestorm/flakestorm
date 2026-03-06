@@ -15,7 +15,7 @@ This generates an `flakestorm.yaml` with sensible defaults. Customize it for you
 ## Configuration Structure
 
 ```yaml
-version: "1.0"
+version: "1.0"   # or "2.0" for chaos, contract, replay, scoring
 
 agent:
   # Agent connection settings
@@ -38,6 +38,21 @@ output:
 advanced:
   # Advanced options
 ```
+
+### V2: Chaos, Contracts, Replay, and Scoring
+
+With `version: "2.0"` you can add the three **chaos engineering pillars** and a unified score:
+
+| Block | Purpose | Documentation |
+|-------|---------|---------------|
+| `chaos` | **Environment chaos** — Inject faults into tools, LLMs, and context (timeouts, errors, rate limits, context attacks). | [Environment Chaos](ENVIRONMENT_CHAOS.md) |
+| `contract` + `chaos_matrix` | **Behavioral contracts** — Named invariants verified across a matrix of chaos scenarios; produces a resilience score. | [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md) |
+| `replays.sessions` | **Replay regression** — Import production failure sessions and replay them as deterministic tests. | [Replay Regression](REPLAY_REGRESSION.md) |
+| `scoring` | **Unified score** — Weights for mutation_robustness, chaos_resilience, contract_compliance, replay_regression (used by `flakestorm ci`). | See [README](../README.md) “Scores at a glance” |
+
+**Context attacks** (chaos on tool/context, not the user prompt) are configured under `chaos.context_attacks`. See [Context Attacks](CONTEXT_ATTACKS.md).
+
+All v1.0 options remain valid; v2.0 blocks are optional and additive.
 
 ---
 
@@ -923,6 +938,22 @@ advanced:
 | `concurrency` | integer | `10` | Max concurrent agent requests (1-100) |
 | `retries` | integer | `2` | Retry failed requests (0-5) |
 | `seed` | integer | null | Random seed for reproducibility |
+
+---
+
+## Scoring (V2)
+
+When using `version: "2.0"` and running `flakestorm ci`, the **overall** score is a weighted combination of up to four components. Configure the weights so they sum to 1.0:
+
+```yaml
+scoring:
+  mutation: 0.25    # Weight for mutation robustness score
+  chaos: 0.25       # Weight for chaos-only resilience score
+  contract: 0.25    # Weight for contract compliance (resilience matrix)
+  replay: 0.25      # Weight for replay regression (passed/total sessions)
+```
+
+Only components that actually run are included; the overall score is the weighted average of the components that ran. See [README](../README.md) “Scores at a glance” and the pillar docs: [Environment Chaos](ENVIRONMENT_CHAOS.md), [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md), [Replay Regression](REPLAY_REGRESSION.md).
 
 ---
 

@@ -1,0 +1,11 @@
+# Built-in chaos profile: Degraded LLM
+name: degraded_llm
+description: >
+  Truncated responses, rate limits after 5 calls.
+chaos:
+  llm_faults:
+    - mode: truncated_response
+      max_tokens: 20
+      probability: 0.3
+    - mode: rate_limit
+      after_calls: 5

@@ -5,6 +5,8 @@ This module provides high-performance implementations for:
 - Robustness score calculation
 - String similarity scoring
 - Parallel processing utilities
+- V2: Contract resilience matrix score (severity-weighted)
+- V2: Overall resilience (weighted combination of mutation/chaos/contract/replay)
 
 Uses Rust bindings when available, falls back to pure Python otherwise.
 """
@@ -166,6 +168,56 @@ def string_similarity(s1: str, s2: str) -> float:
         return 1.0
 
     return 1.0 - (distance / max_len)
+
+
+def calculate_resilience_matrix_score(
+    severities: list[str],
+    passed: list[bool],
+) -> tuple[float, bool, bool]:
+    """
+    V2: Contract resilience matrix score (severity-weighted, 0–100).
+
+    Returns (score, overall_passed, critical_failed).
+    Severity weights: critical=3, high=2, medium=1, low=1.
+    """
+    if _RUST_AVAILABLE:
+        return flakestorm_rust.calculate_resilience_matrix_score(severities, passed)
+
+    # Pure Python fallback
+    n = min(len(severities), len(passed))
+    if n == 0:
+        return (100.0, True, False)
+    weight_map = {"critical": 3, "high": 2, "medium": 1, "low": 1}
+    weighted_pass = 0.0
+    weighted_total = 0.0
+    critical_failed = False
+    for i in range(n):
+        w = weight_map.get(severities[i].lower(), 1)
+        weighted_total += w
+        if passed[i]:
+            weighted_pass += w
+        elif severities[i].lower() == "critical":
+            critical_failed = True
+    score = (weighted_pass / weighted_total * 100.0) if weighted_total else 100.0
+    score = round(score, 2)
+    return (score, not critical_failed, critical_failed)
+
+
+def calculate_overall_resilience(scores: list[float], weights: list[float]) -> float:
+    """
+    V2: Overall resilience from component scores and weights.
+
+    Weighted average for mutation_robustness, chaos_resilience, contract_compliance, replay_regression.
+    """
+    if _RUST_AVAILABLE:
+        return flakestorm_rust.calculate_overall_resilience(scores, weights)
+
+    n = min(len(scores), len(weights))
+    if n == 0:
+        return 1.0
+    sum_w = sum(weights[i] for i in range(n))
+    sum_ws = sum(scores[i] * weights[i] for i in range(n))
+    return sum_ws / sum_w if sum_w else 1.0
 
 
 def parallel_process_mutations(

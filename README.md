@@ -33,23 +33,52 @@
 
 ## The Problem
 
-**The "Happy Path" Fallacy**: Current AI development tools focus on getting an agent to work *once*. Developers tweak prompts until they get a correct answer, declare victory, and ship.
+Production AI agents are **distributed systems**: they depend on LLM APIs, tools, context windows, and multi-step orchestration. Each of these can fail. Today’s tools don’t answer the questions that matter:
 
-**The Reality**: LLMs are non-deterministic. An agent that works on Monday with `temperature=0.7` might fail on Tuesday. Production agents face real users who make typos, get aggressive, and attempt prompt injections. Real traffic exposes failures that happy-path testing misses.
+- **What happens when the agent’s tools fail?** — A search API returns 503. A database times out. Does the agent degrade gracefully, hallucinate, or fabricate data?
+- **Does the agent always follow its rules?** — Must it always cite sources? Never return PII? Are those guarantees maintained when the environment is degraded?
+- **Did we fix the production incident?** — After a failure in prod, how do we prove the fix and prevent regression?
 
-**The Void**:
-- **Observability Tools** (LangSmith) tell you *after* the agent failed in production
-- **Eval Libraries** (RAGAS) focus on academic scores rather than system reliability
-- **CI Pipelines** lack chaos testing — agents ship untested against adversarial inputs
-- **Missing Link**: A tool that actively *attacks* the agent to prove robustness before deployment
+Observability tools tell you *after* something broke. Eval libraries focus on output quality, not resilience. **No tool systematically breaks the agent’s environment to test whether it survives.** Flakestorm fills that gap.
 
-## The Solution
+## The Solution: Chaos Engineering for AI Agents
 
-**Flakestorm** is a chaos testing layer for production AI agents. It applies **Chaos Engineering** principles to systematically test how your agents behave under adversarial inputs before real users encounter them.
+**Flakestorm** is a **chaos engineering platform** for production AI agents. Like Chaos Monkey for infrastructure, Flakestorm deliberately injects failures into the tools, APIs, and LLMs your agent depends on — then verifies that the agent still obeys its behavioral contract and recovers gracefully.
 
-Instead of running one test case, Flakestorm takes a single "Golden Prompt", generates adversarial mutations (semantic variations, noise injection, hostile tone, prompt injections), runs them against your agent, and calculates a **Robustness Score**. Run it before deploy, in CI, or against production-like environments.
+> **Other tools test if your agent gives good answers. Flakestorm tests if your agent survives production.**
 
-> **"If it passes Flakestorm, it won't break in Production."**
+### Three Pillars
+
+| Pillar | What it does | Question answered |
+|--------|----------------|--------------------|
+| **Environment Chaos** | Inject faults into tools and LLMs (timeouts, errors, rate limits, malformed responses) | *Does the agent handle bad environments?* |
+| **Behavioral Contracts** | Define invariants (rules the agent must always follow) and verify them across a matrix of chaos scenarios | *Does the agent obey its rules when the world breaks?* |
+| **Replay Regression** | Import real production failure sessions and replay them as deterministic tests | *Did we fix this incident?* |
+
+On top of that, Flakestorm still runs **adversarial prompt mutations** (24 mutation types) so you can test bad inputs and bad environments together.
+
+**Scores at a glance**
+
+| What you run | Score you get |
+|--------------|----------------|
+| `flakestorm run` | **Robustness score** (0–1): how well the agent handled adversarial prompts. |
+| `flakestorm run --chaos --chaos-only` | **Chaos resilience** (same 0–1 metric): how well the agent handled a broken environment (no mutations, only chaos). |
+| `flakestorm contract run` | **Resilience score** (0–100%): contract × chaos matrix, severity-weighted. |
+| `flakestorm replay run …` | Per-session pass/fail; aggregate **replay regression** score when run via `flakestorm ci`. |
+| `flakestorm ci` | **Overall (weighted)** score combining mutation robustness, chaos resilience, contract compliance, and replay regression — one number for CI gates. |
+
+**Commands by scope**
+
+| Scope | Command | What runs |
+|-------|---------|-----------|
+| **V1 only / mutation only** | `flakestorm run` | Just adversarial mutations → agent → invariants. No chaos, no contract matrix, no replay. Use a v1.0 config or omit `--chaos` so you get only the classic robustness score. |
+| **Mutation + chaos** | `flakestorm run --chaos` | Mutations run against a fault-injected agent (tool/LLM chaos). |
+| **Chaos only** | `flakestorm run --chaos --chaos-only` | No mutations; golden prompts only, with chaos. Single chaos resilience score. |
+| **Contract only** | `flakestorm contract run` | Contract × chaos matrix; resilience score. |
+| **Replay only** | `flakestorm replay run path/to/replay.yaml -c flakestorm.yaml` | One or more replay sessions. |
+| **ALL (full CI)** | `flakestorm ci` | Mutation run + contract (if configured) + chaos-only run (if chaos configured) + all replay sessions (if configured); then **overall** weighted score. |
+
+**Context attacks** are part of environment chaos: faults are applied to **tool responses and context** (e.g. a tool returns valid-looking content with hidden instructions), not to the user prompt. See [Context Attacks](docs/CONTEXT_ATTACKS.md).
 
 ## Production-First by Design
 
@@ -84,7 +113,7 @@ Flakestorm is built for production-grade agents handling real traffic. While it 
 
 ![flakestorm Demo](flakestorm_demo.gif)
 
-*Watch flakestorm generate mutations and test your agent in real-time*
+*Watch Flakestorm run chaos and mutation tests against your agent in real-time*
 
 ### Test Report
 
@@ -102,31 +131,36 @@ Flakestorm is built for production-grade agents handling real traffic. While it 
 
 ## How Flakestorm Works
 
-Flakestorm follows a simple but powerful workflow:
+Flakestorm supports several modes; you can use one or combine them:
 
-1. **You provide "Golden Prompts"** — example inputs that should always work correctly
-2. **Flakestorm generates mutations** — using a local LLM, it creates adversarial variations across 24 mutation types:
-   - **Core prompt-level (8)**: Paraphrase, noise, tone shift, prompt injection, encoding attacks, context manipulation, length extremes, custom
-   - **Advanced prompt-level (7)**: Multi-turn attacks, advanced jailbreaks, semantic similarity attacks, format poisoning, language mixing, token manipulation, temporal attacks
-   - **System/Network-level (9)**: HTTP header injection, payload size attacks, content-type confusion, query parameter poisoning, request method attacks, protocol-level attacks, resource exhaustion, concurrent patterns, timeout manipulation
-3. **Your agent processes each mutation** — Flakestorm sends them to your agent endpoint
-4. **Invariants are checked** — responses are validated against rules you define (latency, content, safety)
-5. **Robustness Score is calculated** — weighted by mutation difficulty and importance
-6. **Report is generated** — interactive HTML showing what passed, what failed, and why
+- **Chaos only** — Golden prompts → agent with fault-injected tools/LLM → invariants. *Does the agent handle bad environments?*
+- **Contract** — Golden prompts → agent under each chaos scenario → verify named invariants across a matrix. *Does the agent obey its rules under every failure mode?*
+- **Replay** — Recorded production input + recorded tool responses → agent → contract. *Did we fix this incident?*
+- **Mutation (optional)** — Golden prompts → adversarial mutations (24 types) → agent (optionally under chaos) → invariants. *Does the agent handle bad inputs (and optionally bad environments)?*
 
-The result: You know exactly how your agent will behave under stress before users ever see it.
+You define **golden prompts**, **invariants** (or a full **contract** with severity and chaos matrix), and optionally **chaos** (tool/LLM faults) and **replay** sessions. Flakestorm runs the chosen mode(s), checks responses against your rules, and produces a **robustness score** (mutation or chaos-only runs) or **resilience score** (contract run), plus HTML report. Use `flakestorm run`, `flakestorm contract run`, `flakestorm replay run`, or `flakestorm ci` for the combined overall score.
 
-> **Note**: The open source version uses local LLMs (Ollama) for mutation generation. The cloud version (in development) uses production-grade infrastructure to mirror real-world chaos testing at scale.
+> **Note**: Mutation generation uses a local LLM (Ollama) or cloud APIs (OpenAI, Claude, Gemini). API keys via environment variables only. See [LLM Providers](docs/LLM_PROVIDERS.md).
 
 ## Features
 
-- ✅ **24 Mutation Types**: Comprehensive robustness testing covering:
-  - **Core prompt-level attacks (8)**: Paraphrase, noise, tone shift, prompt injection, encoding attacks, context manipulation, length extremes, custom
-  - **Advanced prompt-level attacks (7)**: Multi-turn attacks, advanced jailbreaks, semantic similarity attacks, format poisoning, language mixing, token manipulation, temporal attacks
-  - **System/Network-level attacks (9)**: HTTP header injection, payload size attacks, content-type confusion, query parameter poisoning, request method attacks, protocol-level attacks, resource exhaustion, concurrent patterns, timeout manipulation
-- ✅ **Invariant Assertions**: Deterministic checks, semantic similarity, basic safety
-- ✅ **Beautiful Reports**: Interactive HTML reports with pass/fail matrices
-- ✅ **Open Source Core**: Full chaos engine available locally for experimentation and CI
+### Chaos engineering pillars
+
+- **Environment Chaos** — Inject faults into tools and LLMs (timeouts, errors, rate limits, malformed responses, built-in profiles). [→ Environment Chaos](docs/ENVIRONMENT_CHAOS.md)
+- **Behavioral Contracts** — Named invariants × chaos matrix; severity-weighted resilience score; optional reset for stateful agents. [→ Behavioral Contracts](docs/BEHAVIORAL_CONTRACTS.md)
+- **Replay Regression** — Import production failures (manual or LangSmith), replay deterministically, verify against contracts. [→ Replay Regression](docs/REPLAY_REGRESSION.md)
+
+### Supporting capabilities
+
+- **Adversarial mutations** — 24 mutation types (prompt-level and system/network-level) when you want to test bad inputs alone or combined with chaos. [→ Test Scenarios](docs/TEST_SCENARIOS.md)
+- **Invariants & assertions** — Deterministic checks, semantic similarity, safety (PII, refusal); configurable per contract.
+- **Robustness score** — For mutation runs: a single weighted score (0–1) of how well the agent handled adversarial prompts. Reported in HTML/JSON and CLI (`results.statistics.robustness_score`).
+- **Unified resilience score** — For full CI: weighted combination of **mutation robustness**, chaos resilience, contract compliance, and replay regression; configurable in YAML.
+- **Context attacks** — Indirect injection and memory poisoning (e.g. via tool responses). [→ Context Attacks](docs/CONTEXT_ATTACKS.md)
+- **LLM providers** — Ollama, OpenAI, Anthropic, Google (Gemini); API keys via env only. [→ LLM Providers](docs/LLM_PROVIDERS.md)
+- **Reports** — Interactive HTML and JSON; contract matrix and replay reports.
+
+**Try it:** [Working example](examples/v2_research_agent/README.md) with chaos, contracts, and replay from the CLI.
 
 ## Open Source vs Cloud
 
@@ -172,8 +206,9 @@ This is the fastest way to try Flakestorm locally. Production teams typically us
    ```bash
    flakestorm run
    ```
+   With a [v2 config](examples/v2_research_agent/README.md) you can also run `flakestorm run --chaos`, `flakestorm contract run`, `flakestorm replay run`, or `flakestorm ci` to exercise all pillars.
 
-That's it! You'll get a robustness score and detailed report showing how your agent handles adversarial inputs.
+That's it! You get a **robustness score** (for mutation runs) or a **resilience score** (when using chaos/contract/replay), plus a report showing how your agent handles chaos and adversarial inputs.
 
 > **Note**: For full local execution (including mutation generation), you'll need Ollama installed. See the [Usage Guide](docs/USAGE_GUIDE.md) for complete setup instructions.
 
@@ -181,10 +216,12 @@ That's it! You'll get a robustness score and detailed report showing how your ag
 
 ## Roadmap
 
-See what's coming next! Check out our [Roadmap](ROADMAP.md) for upcoming features including:
-- 🚀 Pattern Engine Upgrade with 110+ Prompt Injection Patterns and 52+ PII Detection Patterns
-- ☁️ Cloud Version enhancements (scalable runs, team collaboration, continuous testing)
-- 🏢 Enterprise features (on-premise deployment, custom patterns, compliance certifications)
+See [Roadmap](ROADMAP.md) for the full plan. Highlights:
+
+- **V3 — Multi-agent chaos** — Chaos engineering for systems of multiple agents: fault injection across agent-to-agent and tool boundaries, contract verification for multi-agent workflows, and replay of multi-agent production incidents.
+- **Pattern engine** — 110+ prompt-injection and 52+ PII detection patterns; Rust-backed, sub-50ms.
+- **Cloud** — Scalable runs, team dashboards, scheduled chaos, CI integrations.
+- **Enterprise** — On-premise, audit logging, compliance certifications.
 
 ## Documentation
 
@@ -193,7 +230,14 @@ See what's coming next! Check out our [Roadmap](ROADMAP.md) for upcoming feature
 - [⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md) - All configuration options
 - [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) - How to connect FlakeStorm to your agent
 - [🧪 Test Scenarios](docs/TEST_SCENARIOS.md) - Real-world examples with code
+- [📂 Example: chaos, contracts & replay](examples/v2_research_agent/README.md) - Working agent and config you can run
 - [🔗 Integrations Guide](docs/INTEGRATIONS_GUIDE.md) - HuggingFace models & semantic similarity
+- [🤖 LLM Providers](docs/LLM_PROVIDERS.md) - OpenAI, Claude, Gemini (env-only API keys)
+- [🌪️ Environment Chaos](docs/ENVIRONMENT_CHAOS.md) - Tool/LLM fault injection
+- [📜 Behavioral Contracts](docs/BEHAVIORAL_CONTRACTS.md) - Contract × chaos matrix
+- [🔄 Replay Regression](docs/REPLAY_REGRESSION.md) - Import and replay production failures
+- [🛡️ Context Attacks](docs/CONTEXT_ATTACKS.md) - Indirect injection, memory poisoning
+- [📐 Spec & audit](docs/V2_SPEC.md) - Spec clarifications; [implementation audit](docs/V2_AUDIT.md) - PRD/addendum verification
 
 ### For Developers
 - [🏗️ Architecture & Modules](docs/MODULES.md) - How the code works
@@ -234,3 +278,4 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 <p align="center">
   ❤️ <a href="https://github.com/sponsors/flakestorm">Sponsor Flakestorm on GitHub</a>
 </p>
+ 

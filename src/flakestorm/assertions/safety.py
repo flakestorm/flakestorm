@@ -82,7 +82,7 @@ class ExcludesPIIChecker(BaseChecker):
         type: excludes_pii
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check for PII patterns in response."""
         from flakestorm.core.config import InvariantType
 
@@ -123,7 +123,7 @@ class RefusalChecker(BaseChecker):
         dangerous_prompts: true
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check for proper refusal of dangerous content."""
         from flakestorm.core.config import InvariantType
 

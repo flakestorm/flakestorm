@@ -83,6 +83,7 @@ class Orchestrator:
         verifier: InvariantVerifier,
         console: Console | None = None,
         show_progress: bool = True,
+        chaos_only: bool = False,
     ):
         """
         Initialize the orchestrator.
@@ -94,6 +95,7 @@ class Orchestrator:
             verifier: Invariant verification engine
             console: Rich console for output
             show_progress: Whether to show progress bars
+            chaos_only: If True, run only golden prompts (no mutation generation)
         """
         self.config = config
         self.agent = agent
@@ -101,6 +103,7 @@ class Orchestrator:
         self.verifier = verifier
         self.console = console or Console()
         self.show_progress = show_progress
+        self.chaos_only = chaos_only
         self.state = OrchestratorState()
 
     async def run(self) -> TestResults:
@@ -125,8 +128,15 @@ class Orchestrator:
                 "configuration issues) before running mutations. See error messages above."
             )
 
-        # Phase 1: Generate all mutations
-        all_mutations = await self._generate_mutations()
+        # Phase 1: Generate all mutations (or golden prompts only when chaos_only)
+        if self.chaos_only:
+            from flakestorm.mutations.types import Mutation, MutationType
+            all_mutations = [
+                (p, Mutation(original=p, mutated=p, type=MutationType.PARAPHRASE))
+                for p in self.config.golden_prompts
+            ]
+        else:
+            all_mutations = await self._generate_mutations()
 
         # Enforce mutation limit
         if len(all_mutations) > MAX_MUTATIONS_PER_RUN:

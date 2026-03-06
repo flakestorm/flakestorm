@@ -1,0 +1,9 @@
+# Replay session: production incident to regress
+# Run with: flakestorm replay run replays/incident_001.yaml -c flakestorm.yaml
+id: incident-001
+name: "Research agent incident - missing source"
+source: manual
+input: "What is the capital of France?"
+tool_responses: []
+expected_failure: "Agent returned response without citing source"
+contract: "Research Agent Contract"

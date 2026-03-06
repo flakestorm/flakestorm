@@ -4,6 +4,17 @@ This roadmap outlines the exciting features and improvements coming to Flakestor
 
 ## 🚀 Upcoming Features
 
+### V3 — Multi-Agent Chaos (Future)
+
+Flakestorm will extend chaos engineering to **multi-agent systems**: workflows where multiple agents collaborate, call each other, or share tools and context.
+
+- **Multi-agent fault injection** — Inject faults at agent-to-agent boundaries (e.g. one agent’s response is delayed or malformed), at shared tools, or at the orchestrator level. Answer: *Does the system degrade gracefully when one agent or tool fails?*
+- **Multi-agent contracts** — Define invariants over the whole workflow (e.g. “final answer must cite at least one agent’s source”, “no PII in cross-agent messages”). Verify contracts across chaos scenarios that target different agents or links.
+- **Multi-agent replay** — Import and replay production incidents that involve several agents (e.g. orchestrator + tool-calling agent + external API). Reproduce and regression-test complex failure modes.
+- **Orchestration-aware chaos** — Support for LangGraph, CrewAI, AutoGen, and custom orchestrators: inject faults per node or per edge, and measure end-to-end resilience.
+
+V3 keeps the same pillars (environment chaos, behavioral contracts, replay) but applies them to the multi-agent graph instead of a single agent.
+
 ### Pattern Engine Upgrade (Q1 2026)
 
 We're upgrading Flakestorm's core detection engine with a high-performance Rust implementation featuring pre-configured pattern databases.
@@ -102,6 +113,7 @@ We're upgrading Flakestorm's core detection engine with a high-performance Rust 
 - **Q1 2026**: Pattern Engine Upgrade, Cloud Beta Launch
 - **Q2 2026**: Cloud General Availability, Enterprise Beta
 - **Q3 2026**: Enterprise General Availability, Advanced Features
+- **Future (V3)**: Multi-Agent Chaos — fault injection, contracts, and replay for multi-agent systems
 - **Ongoing**: Open Source Improvements, Community Features
 
 ## 🤝 Contributing

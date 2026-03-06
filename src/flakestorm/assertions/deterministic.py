@@ -51,13 +51,14 @@ class BaseChecker(ABC):
         self.type = config.type
 
     @abstractmethod
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """
         Perform the invariant check.
 
         Args:
             response: The agent's response text
             latency_ms: Response latency in milliseconds
+            **kwargs: Optional context (e.g. baseline_response for behavior_unchanged)
 
         Returns:
             CheckResult with pass/fail and details
@@ -74,13 +75,14 @@ class ContainsChecker(BaseChecker):
         value: "confirmation_code"
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check if response contains the required value."""
         from flakestorm.core.config import InvariantType
 
         value = self.config.value or ""
         passed = value.lower() in response.lower()
-
+        if self.config.negate:
+            passed = not passed
         if passed:
             details = f"Found '{value}' in response"
         else:
@@ -102,7 +104,7 @@ class LatencyChecker(BaseChecker):
         max_ms: 2000
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check if latency is within threshold."""
         from flakestorm.core.config import InvariantType
 
@@ -129,7 +131,7 @@ class ValidJsonChecker(BaseChecker):
         type: valid_json
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check if response is valid JSON."""
         from flakestorm.core.config import InvariantType
 
@@ -157,7 +159,7 @@ class RegexChecker(BaseChecker):
         pattern: "^\\{.*\\}$"
     """
 
-    def check(self, response: str, latency_ms: float) -> CheckResult:
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
         """Check if response matches the regex pattern."""
         from flakestorm.core.config import InvariantType
 
@@ -166,7 +168,8 @@ class RegexChecker(BaseChecker):
         try:
             match = re.search(pattern, response, re.DOTALL)
             passed = match is not None
-
+            if self.config.negate:
+                passed = not passed
             if passed:
                 details = f"Response matches pattern '{pattern}'"
             else:
@@ -184,3 +187,82 @@ class RegexChecker(BaseChecker):
                 passed=False,
                 details=f"Invalid regex pattern: {e}",
             )
+
+
+class ContainsAnyChecker(BaseChecker):
+    """Check if response contains any of a list of values."""
+
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
+        from flakestorm.core.config import InvariantType
+
+        values = self.config.values or []
+        if not values:
+            return CheckResult(
+                type=InvariantType.CONTAINS_ANY,
+                passed=False,
+                details="No values configured for contains_any",
+            )
+        response_lower = response.lower()
+        passed = any(v.lower() in response_lower for v in values)
+        if self.config.negate:
+            passed = not passed
+        details = f"Found one of {values}" if passed else f"None of {values} found in response"
+        return CheckResult(
+            type=InvariantType.CONTAINS_ANY,
+            passed=passed,
+            details=details,
+        )
+
+
+class OutputNotEmptyChecker(BaseChecker):
+    """Check that response is not empty or whitespace."""
+
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
+        from flakestorm.core.config import InvariantType
+
+        passed = bool(response and response.strip())
+        return CheckResult(
+            type=InvariantType.OUTPUT_NOT_EMPTY,
+            passed=passed,
+            details="Response is not empty" if passed else "Response is empty or whitespace",
+        )
+
+
+class CompletesChecker(BaseChecker):
+    """Check that agent returned a response (did not crash)."""
+
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
+        from flakestorm.core.config import InvariantType
+
+        passed = response is not None
+        return CheckResult(
+            type=InvariantType.COMPLETES,
+            passed=passed,
+            details="Agent completed" if passed else "Agent did not return a response",
+        )
+
+
+class ExcludesPatternChecker(BaseChecker):
+    """Check that response does not contain any of the given patterns (e.g. system prompt leak)."""
+
+    def check(self, response: str, latency_ms: float, **kwargs: object) -> CheckResult:
+        from flakestorm.core.config import InvariantType
+
+        patterns = self.config.patterns or []
+        if not patterns:
+            return CheckResult(
+                type=InvariantType.EXCLUDES_PATTERN,
+                passed=True,
+                details="No patterns configured",
+            )
+        response_lower = response.lower()
+        found = [p for p in patterns if p.lower() in response_lower]
+        passed = len(found) == 0
+        if self.config.negate:
+            passed = not passed
+        details = f"Excluded patterns not found" if passed else f"Found forbidden: {found}"
+        return CheckResult(
+            type=InvariantType.EXCLUDES_PATTERN,
+            passed=passed,
+            details=details,
+        )

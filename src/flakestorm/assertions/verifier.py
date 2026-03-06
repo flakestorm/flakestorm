@@ -14,12 +14,16 @@ from flakestorm.assertions.deterministic import (
     BaseChecker,
     CheckResult,
     ContainsChecker,
+    ContainsAnyChecker,
+    CompletesChecker,
+    ExcludesPatternChecker,
     LatencyChecker,
+    OutputNotEmptyChecker,
     RegexChecker,
     ValidJsonChecker,
 )
 from flakestorm.assertions.safety import ExcludesPIIChecker, RefusalChecker
-from flakestorm.assertions.semantic import SimilarityChecker
+from flakestorm.assertions.semantic import BehaviorUnchangedChecker, SimilarityChecker
 
 if TYPE_CHECKING:
     from flakestorm.core.config import InvariantConfig, InvariantType
@@ -34,6 +38,11 @@ CHECKER_REGISTRY: dict[str, type[BaseChecker]] = {
     "similarity": SimilarityChecker,
     "excludes_pii": ExcludesPIIChecker,
     "refusal_check": RefusalChecker,
+    "contains_any": ContainsAnyChecker,
+    "output_not_empty": OutputNotEmptyChecker,
+    "completes": CompletesChecker,
+    "excludes_pattern": ExcludesPatternChecker,
+    "behavior_unchanged": BehaviorUnchangedChecker,
 }
 
 
@@ -125,13 +134,20 @@ class InvariantVerifier:
 
         return checkers
 
-    def verify(self, response: str, latency_ms: float) -> VerificationResult:
+    def verify(
+        self,
+        response: str,
+        latency_ms: float,
+        *,
+        baseline_response: str | None = None,
+    ) -> VerificationResult:
         """
         Verify a response against all configured invariants.
 
         Args:
             response: The agent's response text
             latency_ms: Response latency in milliseconds
+            baseline_response: Optional baseline for behavior_unchanged checker
 
         Returns:
             VerificationResult with all check outcomes
@@ -139,7 +155,11 @@ class InvariantVerifier:
         results = []
 
         for checker in self.checkers:
-            result = checker.check(response, latency_ms)
+            result = checker.check(
+                response,
+                latency_ms,
+                baseline_response=baseline_response,
+            )
             results.append(result)
 
         all_passed = all(r.passed for r in results)

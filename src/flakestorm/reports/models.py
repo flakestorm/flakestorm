@@ -184,6 +184,9 @@ class TestResults:
     statistics: TestStatistics
     """Aggregate statistics."""
 
+    resilience_scores: dict[str, float] | None = field(default=None)
+    """V2: mutation_robustness, chaos_resilience, contract_compliance, replay_regression, overall."""
+
     @property
     def duration(self) -> float:
         """Test duration in seconds."""
@@ -209,7 +212,7 @@ class TestResults:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
-        return {
+        out: dict[str, Any] = {
             "version": "1.0",
             "started_at": self.started_at.isoformat(),
             "completed_at": self.completed_at.isoformat(),
@@ -217,4 +220,23 @@ class TestResults:
             "statistics": self.statistics.to_dict(),
             "mutations": [m.to_dict() for m in self.mutations],
             "golden_prompts": self.config.golden_prompts,
+        }
+        if self.resilience_scores:
+            out["resilience_scores"] = self.resilience_scores
+        return out
+
+    def to_replay_session(self, failure_index: int = 0) -> dict[str, Any] | None:
+        """Export a failed mutation as a replay session dict (v2). Returns None if no failure."""
+        failed = self.failed_mutations
+        if not failed or failure_index >= len(failed):
+            return None
+        m = failed[failure_index]
+        return {
+            "id": f"export-{self.started_at.strftime('%Y%m%d-%H%M%S')}-{failure_index}",
+            "name": f"Exported failure: {m.mutation.type.value}",
+            "source": "flakestorm_export",
+            "input": m.original_prompt,
+            "tool_responses": [],
+            "expected_failure": m.error or "One or more invariants failed",
+            "contract": "default",
         }
