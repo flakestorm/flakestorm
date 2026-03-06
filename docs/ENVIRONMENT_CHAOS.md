@@ -110,4 +110,10 @@ chaos:
 - `high_latency` — Delayed responses.
 - `indirect_injection` — Context attack profile (inject into tool/context).
 
-Profile YAMLs live in `src/flakestorm/chaos/profiles/`. Use with `--chaos-profile NAME`.
+Profile YAMLs live in `src/flakestorm/chaos/profiles/`. Use with `--chaos-profile NAME`. The **`model_version_drift`** profile exercises the LLM fault type **`response_drift`**.
+
+---
+
+## See also
+
+- [Context Attacks](CONTEXT_ATTACKS.md) — Indirect injection, memory poisoning.

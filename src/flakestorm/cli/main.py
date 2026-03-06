@@ -552,10 +552,31 @@ def replay_run(
         help="Path to configuration file",
     ),
     from_langsmith: str | None = typer.Option(None, "--from-langsmith", help="LangSmith run ID"),
-    run_after_import: bool = typer.Option(False, "--run", help="Run replay after import"),
+    from_langsmith_project: str | None = typer.Option(
+        None,
+        "--from-langsmith-project",
+        help="Import runs from a LangSmith project (filter by status, then write to --output)",
+    ),
+    filter_status: str = typer.Option(
+        "error",
+        "--filter-status",
+        help="When using --from-langsmith-project: error | warning | all",
+    ),
+    output: Path = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="When importing: output file (single run) or directory (project); replays written as YAML",
+    ),
+    run_after_import: bool = typer.Option(False, "--run", help="Run replay(s) after import"),
 ) -> None:
     """Run or import replay sessions."""
-    asyncio.run(_replay_async(path, config, from_langsmith, run_after_import))
+    asyncio.run(
+        _replay_async(
+            path, config, from_langsmith, from_langsmith_project,
+            filter_status, output, run_after_import,
+        )
+    )
 
 
 @replay_app.command("export")
@@ -602,8 +623,12 @@ async def _replay_async(
     path: Path | None,
     config: Path,
     from_langsmith: str | None,
+    from_langsmith_project: str | None,
+    filter_status: str,
+    output: Path | None,
     run_after_import: bool,
 ) -> None:
+    import yaml
     from flakestorm.core.config import load_config
     from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
     from flakestorm.replay.loader import ReplayLoader, resolve_contract
@@ -612,10 +637,60 @@ async def _replay_async(
     agent = create_agent_adapter(cfg.agent)
     if cfg.chaos:
         agent = create_instrumented_adapter(agent, cfg.chaos)
+    loader = ReplayLoader()
+
+    if from_langsmith_project:
+        sessions = loader.load_langsmith_project(
+            project_name=from_langsmith_project,
+            filter_status=filter_status,
+        )
+        console.print(f"[green]Imported {len(sessions)} replay(s) from LangSmith project.[/green]")
+        out_path = Path(output) if output else Path("./replays")
+        out_path.mkdir(parents=True, exist_ok=True)
+        for i, session in enumerate(sessions):
+            safe_id = (session.id or str(i)).replace("/", "_").replace("\\", "_")[:64]
+            fpath = out_path / f"replay-{safe_id}.yaml"
+            fpath.write_text(
+                yaml.dump(
+                    session.model_dump(mode="json", exclude_none=True),
+                    default_flow_style=False,
+                    sort_keys=False,
+                    allow_unicode=True,
+                ),
+                encoding="utf-8",
+            )
+            console.print(f"  [dim]Wrote[/dim] {fpath}")
+        if run_after_import and sessions:
+            contract = None
+            try:
+                contract = resolve_contract(sessions[0].contract, cfg, config.parent)
+            except FileNotFoundError:
+                pass
+            runner = ReplayRunner(agent, contract=contract)
+            passed = 0
+            for session in sessions:
+                result = await runner.run(session, contract=contract)
+                if result.passed:
+                    passed += 1
+            console.print(f"[bold]Replay results:[/bold] {passed}/{len(sessions)} passed")
+        raise typer.Exit(0)
+
     if from_langsmith:
-        loader = ReplayLoader()
         session = loader.load_langsmith_run(from_langsmith)
         console.print(f"[green]Imported replay:[/green] {session.id}")
+        if output:
+            out_path = Path(output)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(
+                yaml.dump(
+                    session.model_dump(mode="json", exclude_none=True),
+                    default_flow_style=False,
+                    sort_keys=False,
+                    allow_unicode=True,
+                ),
+                encoding="utf-8",
+            )
+            console.print(f"[dim]Wrote[/dim] {out_path}")
         if run_after_import:
             contract = None
             try:
@@ -627,8 +702,8 @@ async def _replay_async(
             console.print(f"[bold]Replay result:[/bold] passed={replay_result.passed}")
             console.print(f"[dim]Response:[/dim] {(replay_result.response.output or '')[:200]}...")
         raise typer.Exit(0)
+
     if path and path.exists():
-        loader = ReplayLoader()
         session = loader.load_file(path)
         contract = None
         try:
@@ -641,7 +716,9 @@ async def _replay_async(
         if replay_result.verification_details:
             console.print(f"[dim]Checks:[/dim] {', '.join(replay_result.verification_details)}")
     else:
-        console.print("[yellow]Provide a replay file path or --from-langsmith RUN_ID.[/yellow]")
+        console.print(
+            "[yellow]Provide a replay file path, --from-langsmith RUN_ID, or --from-langsmith-project PROJECT.[/yellow]"
+        )
 
 
 @app.command()
@@ -703,42 +780,38 @@ async def _ci_async(config: Path, min_score: float) -> None:
         if chaos_score < min_score:
             exit_code = 1
 
-    # Replay sessions
+    # Replay sessions (from replays.sessions and replays.sources with auto_import)
     replay_score = 1.0
-    if cfg.replays and cfg.replays.sessions:
+    if cfg.replays and (cfg.replays.sessions or cfg.replays.sources):
         from flakestorm.core.protocol import create_agent_adapter, create_instrumented_adapter
-        from flakestorm.replay.loader import ReplayLoader, resolve_contract
+        from flakestorm.replay.loader import resolve_contract, resolve_sessions_from_config
         from flakestorm.replay.runner import ReplayRunner
         agent = create_agent_adapter(cfg.agent)
         if cfg.chaos:
             agent = create_instrumented_adapter(agent, cfg.chaos)
-        loader = ReplayLoader()
-        passed = 0
-        total = 0
         config_path = Path(config)
-        for s in cfg.replays.sessions:
-            if getattr(s, "file", None):
-                fpath = Path(s.file)
-                if not fpath.is_absolute():
-                    fpath = config_path.parent / fpath
-                session = loader.load_file(fpath)
-            else:
-                session = s
-            contract = None
-            try:
-                contract = resolve_contract(session.contract, cfg, config_path.parent)
-            except FileNotFoundError:
-                pass
-            runner = ReplayRunner(agent, contract=contract)
-            result = await runner.run(session, contract=contract)
-            total += 1
-            if result.passed:
-                passed += 1
-        replay_score = passed / total if total else 1.0
-        scores["replay_regression"] = replay_score
-        console.print(f"[bold]Replay score:[/bold] {replay_score:.1%} ({passed}/{total})")
-        if replay_score < min_score:
-            exit_code = 1
+        sessions = resolve_sessions_from_config(
+            cfg.replays, config_path.parent, include_sources=True
+        )
+        if sessions:
+            passed = 0
+            total = 0
+            for session in sessions:
+                contract = None
+                try:
+                    contract = resolve_contract(session.contract, cfg, config_path.parent)
+                except FileNotFoundError:
+                    pass
+                runner = ReplayRunner(agent, contract=contract)
+                result = await runner.run(session, contract=contract)
+                total += 1
+                if result.passed:
+                    passed += 1
+            replay_score = passed / total if total else 1.0
+            scores["replay_regression"] = replay_score
+            console.print(f"[bold]Replay score:[/bold] {replay_score:.1%} ({passed}/{total})")
+            if replay_score < min_score:
+                exit_code = 1
 
     # Overall weighted score (only for components that ran)
     from flakestorm.core.config import ScoringConfig

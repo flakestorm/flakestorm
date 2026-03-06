@@ -82,6 +82,8 @@ Each entry is a **scenario**: a name plus optional `tool_faults`, `llm_faults`, 
 - **Weights:** critical = 3, high = 2, medium = 1, low = 1.
 - **Automatic FAIL:** If any invariant with severity `critical` fails in any scenario, the contract is considered failed regardless of the numeric score.
 
+See [V2 Spec](V2_SPEC.md) for the exact formula and matrix isolation (reset) behavior.
+
 ---
 
 ## Commands

@@ -45,9 +45,10 @@ With `version: "2.0"` you can add the three **chaos engineering pillars** and a 
 
 | Block | Purpose | Documentation |
 |-------|---------|---------------|
-| `chaos` | **Environment chaos** — Inject faults into tools, LLMs, and context (timeouts, errors, rate limits, context attacks). | [Environment Chaos](ENVIRONMENT_CHAOS.md) |
+| `chaos` | **Environment chaos** — Inject faults into tools, LLMs, and context (timeouts, errors, rate limits, context attacks, **response_drift**). | [Environment Chaos](ENVIRONMENT_CHAOS.md) |
 | `contract` + `chaos_matrix` | **Behavioral contracts** — Named invariants verified across a matrix of chaos scenarios; produces a resilience score. | [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md) |
 | `replays.sessions` | **Replay regression** — Import production failure sessions and replay them as deterministic tests. | [Replay Regression](REPLAY_REGRESSION.md) |
+| `replays.sources` | **LangSmith sources** — Import from a LangSmith project or by run ID; `auto_import` re-fetches on each run/ci. | [Replay Regression](REPLAY_REGRESSION.md) |
 | `scoring` | **Unified score** — Weights for mutation_robustness, chaos_resilience, contract_compliance, replay_regression (used by `flakestorm ci`). | See [README](../README.md) “Scores at a glance” |
 
 **Context attacks** (chaos on tool/context, not the user prompt) are configured under `chaos.context_attacks`. See [Context Attacks](CONTEXT_ATTACKS.md).

@@ -2,17 +2,26 @@
 Replay loader: load replay sessions from YAML/JSON or LangSmith.
 
 Contract reference resolution: by name (main config) then by file path.
+LangSmith: single run by ID or project listing with filters (Addition 5).
 """
 
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from flakestorm.core.config import ContractConfig, ReplaySessionConfig
+from flakestorm.core.config import (
+    ContractConfig,
+    LangSmithProjectFilterConfig,
+    LangSmithProjectSourceConfig,
+    LangSmithRunSourceConfig,
+    ReplayConfig,
+    ReplaySessionConfig,
+)
 
 if TYPE_CHECKING:
     from flakestorm.core.config import FlakeStormConfig
@@ -58,22 +67,81 @@ class ReplayLoader:
             data = yaml.safe_load(text)
         return ReplaySessionConfig.model_validate(data)
 
+    def _get_langsmith_client(self) -> Any:
+        """Return LangSmith Client; raise ImportError if langsmith not installed."""
+        try:
+            from langsmith import Client
+        except ImportError as e:
+            raise ImportError(
+                "LangSmith requires: pip install flakestorm[langsmith] or pip install langsmith"
+            ) from e
+        return Client()
+
     def load_langsmith_run(self, run_id: str) -> ReplaySessionConfig:
         """
         Load a LangSmith run as a replay session. Requires langsmith>=0.1.0.
         Target API: /api/v1/runs/{run_id}
         Fails clearly if LangSmith schema has changed (expected fields missing).
         """
-        try:
-            from langsmith import Client
-        except ImportError as e:
-            raise ImportError(
-                "LangSmith import requires: pip install flakestorm[langsmith] or pip install langsmith"
-            ) from e
-        client = Client()
+        client = self._get_langsmith_client()
         run = client.read_run(run_id)
         self._validate_langsmith_run_schema(run)
         return self._langsmith_run_to_session(run)
+
+    def load_langsmith_project(
+        self,
+        project_name: str,
+        filter_status: str = "error",
+        date_range: str | None = None,
+        min_latency_ms: int | None = None,
+        limit: int = 200,
+    ) -> list[ReplaySessionConfig]:
+        """
+        Load runs from a LangSmith project as replay sessions. Requires langsmith>=0.1.0.
+        Uses list_runs(project_name=..., error=..., start_time=..., filter=..., limit=...).
+        Each run is fetched fully (read_run) to get child_runs for tool_responses.
+        """
+        client = self._get_langsmith_client()
+        # Build list_runs kwargs
+        error_filter: bool | None = None
+        if filter_status == "error":
+            error_filter = True
+        elif filter_status == "all":
+            error_filter = None
+        else:
+            # "warning" or unknown: treat as non-error runs
+            error_filter = False
+        start_time: datetime | None = None
+        if date_range:
+            date_range_lower = date_range.strip().lower().replace("-", "_")
+            if "7" in date_range_lower and "day" in date_range_lower:
+                start_time = datetime.now(timezone.utc) - timedelta(days=7)
+            elif "24" in date_range_lower and ("hour" in date_range_lower or "day" in date_range_lower):
+                start_time = datetime.now(timezone.utc) - timedelta(hours=24)
+            elif "30" in date_range_lower and "day" in date_range_lower:
+                start_time = datetime.now(timezone.utc) - timedelta(days=30)
+        filter_str: str | None = None
+        if min_latency_ms is not None and min_latency_ms > 0:
+            # LangSmith filter uses seconds for latency
+            latency_sec = min_latency_ms / 1000.0
+            filter_str = f"gt(latency, {latency_sec})"
+        runs_iterator = client.list_runs(
+            project_name=project_name,
+            error=error_filter,
+            start_time=start_time,
+            filter=filter_str,
+            limit=limit,
+            is_root=True,
+        )
+        sessions: list[ReplaySessionConfig] = []
+        for run in runs_iterator:
+            run_id = str(getattr(run, "id", ""))
+            if not run_id:
+                continue
+            full_run = client.read_run(run_id)
+            self._validate_langsmith_run_schema(full_run)
+            sessions.append(self._langsmith_run_to_session(full_run))
+        return sessions
 
     def _validate_langsmith_run_schema(self, run: Any) -> None:
         """Check that run has expected schema; fail clearly if LangSmith API changed."""
@@ -112,3 +180,47 @@ class ReplayLoader:
             tool_responses=tool_responses,
             contract="default",
         )
+
+
+def resolve_sessions_from_config(
+    replays: ReplayConfig | None,
+    config_dir: Path | None = None,
+    *,
+    include_sources: bool = True,
+) -> list[ReplaySessionConfig]:
+    """
+    Build full list of replay sessions from config: inline sessions, file-backed
+    sessions (loaded from disk), and optionally sessions from replays.sources
+    (LangSmith run_id or project with auto_import).
+    """
+    if not replays:
+        return []
+    loader = ReplayLoader()
+    out: list[ReplaySessionConfig] = []
+    for s in replays.sessions:
+        if s.file:
+            path = Path(s.file)
+            if not path.is_absolute() and config_dir:
+                path = config_dir / path
+            out.append(loader.load_file(path))
+        else:
+            out.append(s)
+    if not include_sources or not replays.sources:
+        return out
+    for src in replays.sources:
+        if isinstance(src, LangSmithRunSourceConfig):
+            out.append(loader.load_langsmith_run(src.run_id))
+        elif isinstance(src, LangSmithProjectSourceConfig) and src.auto_import:
+            filt = src.filter
+            filter_status = filt.status if filt else "error"
+            date_range = filt.date_range if filt else None
+            min_latency_ms = filt.min_latency_ms if filt else None
+            out.extend(
+                loader.load_langsmith_project(
+                    project_name=src.project,
+                    filter_status=filter_status,
+                    date_range=date_range,
+                    min_latency_ms=min_latency_ms,
+                )
+            )
+    return out

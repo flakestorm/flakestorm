@@ -20,10 +20,11 @@ from flakestorm.core.config import (
     AdvancedConfig,
     ContractConfig,
     ContractInvariantConfig,
+    ReplayConfig,
     ReplaySessionConfig,
     ReplayToolResponseConfig,
 )
-from flakestorm.replay.loader import ReplayLoader, resolve_contract
+from flakestorm.replay.loader import ReplayLoader, resolve_contract, resolve_sessions_from_config
 from flakestorm.replay.runner import ReplayRunner, ReplayResult
 from flakestorm.core.protocol import AgentResponse, BaseAgentAdapter
 
@@ -98,6 +99,60 @@ class TestReplayLoader:
         )
         with pytest.raises(FileNotFoundError):
             resolve_contract("nonexistent", config, None)
+
+    def test_resolve_sessions_from_config_inline_only(self):
+        """resolve_sessions_from_config returns inline sessions when no sources."""
+        replays = ReplayConfig(
+            sessions=[
+                ReplaySessionConfig(id="a", input="q1", contract="default"),
+                ReplaySessionConfig(id="b", input="q2", contract="default"),
+            ],
+            sources=[],
+        )
+        out = resolve_sessions_from_config(replays, None, include_sources=True)
+        assert len(out) == 2
+        assert out[0].id == "a"
+        assert out[1].id == "b"
+
+    def test_resolve_sessions_from_config_file_backed(self):
+        """resolve_sessions_from_config loads file-backed sessions from config_dir."""
+        with tempfile.NamedTemporaryFile(
+            suffix=".yaml", delete=False, mode="w", encoding="utf-8"
+        ) as f:
+            yaml.dump({
+                "id": "file-session",
+                "input": "from file",
+                "tool_responses": [],
+                "contract": "default",
+            }, f)
+            f.flush()
+            fpath = Path(f.name)
+        try:
+            config_dir = fpath.parent
+            replays = ReplayConfig(
+                sessions=[ReplaySessionConfig(id="", input="", file=fpath.name)],
+                sources=[],
+            )
+            out = resolve_sessions_from_config(replays, config_dir, include_sources=True)
+            assert len(out) == 1
+            assert out[0].id == "file-session"
+            assert out[0].input == "from file"
+        finally:
+            fpath.unlink(missing_ok=True)
+
+    def test_replay_config_sources_parsed_from_dict(self):
+        """ReplayConfig.sources parses langsmith and langsmith_run from dict (YAML)."""
+        cfg = ReplayConfig.model_validate({
+            "sessions": [],
+            "sources": [
+                {"type": "langsmith", "project": "my-agent", "auto_import": True},
+                {"type": "langsmith_run", "run_id": "abc-123"},
+            ],
+        })
+        assert len(cfg.sources) == 2
+        assert cfg.sources[0].project == "my-agent"
+        assert cfg.sources[0].auto_import is True
+        assert cfg.sources[1].run_id == "abc-123"
 
 
 class TestReplayRunner:

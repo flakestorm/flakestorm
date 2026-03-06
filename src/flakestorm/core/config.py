@@ -11,6 +11,7 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
+from typing import Annotated, Literal, Union
 
 import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -534,10 +535,59 @@ class ReplaySessionConfig(BaseModel):
         return self
 
 
+class LangSmithProjectFilterConfig(BaseModel):
+    """Filter for LangSmith project run listing (replays.sources)."""
+
+    status: str = Field(
+        default="error",
+        description="Filter by run status: error | warning | all",
+    )
+    date_range: str | None = Field(
+        default=None,
+        description="e.g. last_7_days (used as start_time relative to now)",
+    )
+    min_latency_ms: int | None = Field(
+        default=None,
+        description="Include runs with latency >= this many ms",
+    )
+
+
+class LangSmithProjectSourceConfig(BaseModel):
+    """Replay source: import runs from a LangSmith project (replays.sources)."""
+
+    type: Literal["langsmith"] = "langsmith"
+    project: str = Field(..., description="LangSmith project name")
+    filter: LangSmithProjectFilterConfig | None = Field(
+        default=None,
+        description="Optional filter (status, date_range, min_latency_ms)",
+    )
+    auto_import: bool = Field(
+        default=False,
+        description="If true, (re-)fetch runs from project on each run/ci",
+    )
+
+
+class LangSmithRunSourceConfig(BaseModel):
+    """Replay source: single LangSmith run by ID (replays.sources)."""
+
+    type: Literal["langsmith_run"] = "langsmith_run"
+    run_id: str = Field(..., description="LangSmith run ID")
+
+
+ReplaySourceConfig = Annotated[
+    Union[LangSmithProjectSourceConfig, LangSmithRunSourceConfig],
+    Field(discriminator="type"),
+]
+
+
 class ReplayConfig(BaseModel):
     """V2 replay regression configuration."""
 
     sessions: list[ReplaySessionConfig] = Field(default_factory=list)
+    sources: list[ReplaySourceConfig] = Field(
+        default_factory=list,
+        description="Optional LangSmith sources (project or run_id); sessions from sources can be merged when auto_import is true",
+    )
 
 
 class FlakeStormConfig(BaseModel):

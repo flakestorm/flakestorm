@@ -68,16 +68,62 @@ Verification of the codebase against the PRD and addendum: behavior, config sche
 
 ---
 
-## 6. Addendum — Context Attacks, Model Drift, LangSmith, Spec
+## 6. Addendum (flakestorm-v2-addendum.md) — Full Checklist
 
-| Item | Status |
-|------|--------|
-| Context attacks module (indirect_injection, etc.) | ✅ `chaos/context_attacks.py`; profile `indirect_injection.yaml` |
-| response_drift in llm_proxy | ✅ `chaos/llm_proxy.py` (json_field_rename, verbosity_shift, format_change, refusal_rephrase, tone_shift) |
-| LangSmith load + schema check | ✅ `replay/loader.py`: `load_langsmith_run`, `_validate_langsmith_run_schema` |
-| Python tool fault: fail loudly when no tools | ✅ `create_instrumented_adapter` raises if type=python and tool_faults |
-| Contract matrix isolation (reset) | ✅ Optional reset; warning if stateful and no reset |
-| Resilience score formula (addendum §6.3) | ✅ In `contracts/matrix.py` and `docs/V2_SPEC.md` |
+### Addition 1 — Context Attacks Module
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| `chaos/context_attacks.py` | ✅ | `ContextAttackEngine`, `maybe_inject_indirect()` |
+| indirect_injection (inject payloads into tool response) | ✅ | Wired via engine; profile `indirect_injection.yaml` |
+| memory_poisoning, system_prompt_leak_probe | ⚠️ | Docstring/config types exist; memory_poisoning inject step and leak probe as contract assertion are not fully wired in execution flow |
+| Contract invariants: excludes_pattern, behavior_unchanged | ✅ | `assertions/verifier.py`; use for system_prompt_not_leaked, injection_not_executed |
+| Config: `chaos.context_attacks` list with type (e.g. indirect_injection) | ✅ | `ContextAttackConfig` in `core/config.py` |
+
+### Addition 2 — Model Version Drift (response_drift)
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| `response_drift` in llm_faults | ✅ | `chaos/llm_proxy.py`: `apply_llm_response_drift`, drift_type, severity, direction, factor |
+| drift_type: json_field_rename, verbosity_shift, format_change, refusal_rephrase, tone_shift | ✅ | Implemented in llm_proxy |
+| Profile `model_version_drift.yaml` | ✅ | `chaos/profiles/model_version_drift.yaml` |
+
+### Addition 3 — Multi-Agent Failure Propagation
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| v3 roadmap placeholder, no v2 implementation | ✅ | Documented in ROADMAP.md as V3; no code required |
+
+### Addition 4 — Resilience Certificate Export
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| `flakestorm certificate` CLI command | ❌ | Not implemented |
+| `reports/certificate.py` (PDF/HTML certificate) | ❌ | Not implemented |
+| Config `certificate.tester_name`, pass_threshold, output_format | ❌ | Not implemented |
+
+### Addition 5 — LangSmith Replay Import
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| Import single run by ID: `flakestorm replay --from-langsmith RUN_ID` | ✅ | `replay/loader.py`: `load_langsmith_run(run_id)`; CLI option |
+| Import and run: `--from-langsmith RUN_ID --run` | ✅ | `_replay_async` supports run_after_import |
+| Schema validation (fail clearly if LangSmith API changed) | ✅ | `_validate_langsmith_run_schema` |
+| Map run inputs/outputs/child_runs to ReplaySessionConfig | ✅ | `_langsmith_run_to_session` |
+| `--from-langsmith-project PROJECT` + `--filter-status` + `--output` | ✅ | `replay run --from-langsmith-project X --filter-status error -o ./replays/`; writes YAML per run |
+| `replays.sources` (type: langsmith | langsmith_run, project, filter, auto_import) | ✅ | `LangSmithProjectSourceConfig`, `LangSmithRunSourceConfig`, `ReplayConfig.sources`; CI uses `resolve_sessions_from_config(..., include_sources=True)` |
+
+### Addition 6 — Implicit Spec Clarifications
+
+| Requirement | Status | Notes |
+|-------------|--------|------|
+| 6.1 Python callables: fail loudly if tool_faults but no tools/ToolRegistry | ✅ | `create_instrumented_adapter` raises with clear message for type=python |
+| 6.2 Contract matrix: reset between cells (reset_endpoint / reset_function) | ✅ | `ContractEngine._reset_agent()`; config fields on AgentConfig |
+| 6.3 Resilience score formula in spec (weighted, auto-FAIL on critical) | ✅ | `contracts/matrix.py` docstring and implementation; `docs/V2_SPEC.md` |
+
+---
+
+**Summary:** Addendum Additions 1, 2, 3, 5, 6 are implemented (with minor gaps on full memory_poisoning/leak_probe wiring). **Addition 4 (Resilience Certificate)** is not implemented.
 
 ---
 

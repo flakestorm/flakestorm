@@ -63,7 +63,7 @@ Flakestorm resolves name first, then path; if not found, replay may fail or fall
 
 ## Configuration in flakestorm.yaml
 
-You can define replay sessions inline or by file:
+You can define replay sessions inline, by file, or via **LangSmith sources**:
 
 ```yaml
 version: "2.0"
@@ -76,9 +76,20 @@ replays:
       input: "What is the capital of France?"
       contract: "Research Agent Contract"
       tool_responses: []
+  # LangSmith sources (import by project or run ID; auto_import re-fetches on each run/ci)
+  sources:
+    - type: langsmith
+      project: "my-production-agent"
+      filter:
+        status: error           # error | warning | all
+        date_range: last_7_days
+        min_latency_ms: 5000
+      auto_import: true
+    - type: langsmith_run
+      run_id: "abc123def456"
 ```
 
-When you use `file:`, the session’s `id`, `input`, and `contract` come from the loaded file. When you use inline `id` and `input`, you must provide them.
+When you use `file:`, the session’s `id`, `input`, and `contract` come from the loaded file. When you use inline `id` and `input`, you must provide them. **`replays.sources`** sessions are merged when running `flakestorm ci` or when `auto_import` is true (project sources).
 
 ---
 
@@ -89,9 +100,10 @@ When you use `file:`, the session’s `id`, `input`, and `contract` come from th
 | `flakestorm replay run path/to/replay.yaml -c flakestorm.yaml` | Run a single replay file. `-c` supplies agent and contract config. |
 | `flakestorm replay run path/to/dir -c flakestorm.yaml` | Run all replay files in the directory. |
 | `flakestorm replay export --from-report REPORT.json --output ./replays` | Export failed mutations from a Flakestorm report as replay YAML files. |
-| `flakestorm replay import --from-langsmith RUN_ID` | Import a session from LangSmith (requires `flakestorm[langsmith]`). |
-| `flakestorm replay import --from-langsmith RUN_ID --run` | Import and run the replay. |
-| `flakestorm ci -c flakestorm.yaml` | Runs mutation, contract, chaos-only, **and all sessions in `replays.sessions`**; reports **replay_regression** (passed/total) and **overall** weighted score. |
+| `flakestorm replay run --from-langsmith RUN_ID -c flakestorm.yaml` | Import a single session from LangSmith by run ID (requires `flakestorm[langsmith]`). |
+| `flakestorm replay run --from-langsmith RUN_ID --run -o replay.yaml` | Import, optionally write to file, and run the replay. |
+| `flakestorm replay run --from-langsmith-project PROJECT --filter-status error -o ./replays/` | Import all runs from a LangSmith project; write one YAML per run. Add `--run` to run after import. |
+| `flakestorm ci -c flakestorm.yaml` | Runs mutation, contract, chaos-only, **and all replay sessions** (including `replays.sources` with `auto_import`); reports **replay_regression** and **overall** weighted score. |
 
 ---
 
@@ -99,7 +111,8 @@ When you use `file:`, the session’s `id`, `input`, and `contract` come from th
 
 - **Manual** — Write YAML/JSON replay files from incident reports.
 - **Flakestorm export** — `flakestorm replay export --from-report REPORT.json` turns failed runs into replay files.
-- **LangSmith** — `flakestorm replay import --from-langsmith RUN_ID` (requires `pip install flakestorm[langsmith]`).
+- **LangSmith (single run)** — `flakestorm replay run --from-langsmith RUN_ID` (requires `pip install flakestorm[langsmith]`).
+- **LangSmith (project)** — `flakestorm replay run --from-langsmith-project PROJECT --filter-status error -o ./replays/` imports failed runs from a project; or use `replays.sources` in config with `auto_import: true` so CI re-fetches from the project each run.
 
 ---
 

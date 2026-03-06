@@ -237,7 +237,7 @@ See [Roadmap](ROADMAP.md) for the full plan. Highlights:
 - [📜 Behavioral Contracts](docs/BEHAVIORAL_CONTRACTS.md) - Contract × chaos matrix
 - [🔄 Replay Regression](docs/REPLAY_REGRESSION.md) - Import and replay production failures
 - [🛡️ Context Attacks](docs/CONTEXT_ATTACKS.md) - Indirect injection, memory poisoning
-- [📐 Spec & audit](docs/V2_SPEC.md) - Spec clarifications; [implementation audit](docs/V2_AUDIT.md) - PRD/addendum verification
+- [📐 V2 Spec](docs/V2_SPEC.md) - Score formula, reset, Python tools
 
 ### For Developers
 - [🏗️ Architecture & Modules](docs/MODULES.md) - How the code works
