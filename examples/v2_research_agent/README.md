@@ -5,8 +5,8 @@ A **working** HTTP agent and v2.0 config that demonstrates all three V2 pillars:
 ## Prerequisites
 
 - Python 3.10+
-- Ollama running (for mutation generation): `ollama run gemma3:1b` or any model
-- Optional: `pip install fastapi uvicorn` (agent server)
+- **Ollama** running with a model (e.g. `ollama pull gemma3:1b` then `ollama run gemma3:1b`). The agent calls Ollama to generate real LLM responses; Flakestorm uses the same Ollama for mutation generation.
+- Dependencies: `pip install -r requirements.txt` (fastapi, uvicorn, pydantic, httpx)
 
 ## 1. Start the agent
 
@@ -73,4 +73,4 @@ flakestorm ci -c examples/v2_research_agent/flakestorm.yaml --min-score 0.5
 - `replays.sessions` (file reference)
 - `scoring` (weights)
 
-The agent is stateless except for a call counter; `/reset` clears it so contract cells stay isolated.
+The agent calls **Ollama** (same model as in `flakestorm.yaml`: `gemma3:1b` by default). Set `OLLAMA_BASE_URL` or `OLLAMA_MODEL` if your Ollama runs elsewhere or uses a different model. The agent is stateless except for a call counter; `/reset` clears it so contract cells stay isolated.
