@@ -18,9 +18,7 @@
   <a href="https://pypi.org/project/flakestorm/">
     <img src="https://img.shields.io/pypi/dm/flakestorm.svg" alt="PyPI downloads">
   </a>
-  <a href="https://github.com/flakestorm/flakestorm/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/flakestorm/flakestorm/ci.yml?branch=main" alt="Build Status">
-  </a>
+  
   <a href="https://github.com/flakestorm/flakestorm/releases">
     <img src="https://img.shields.io/github/v/release/flakestorm/flakestorm" alt="Latest Release">
   </a>
