@@ -41,6 +41,7 @@ contract: "Finance Agent Contract"
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `file` | No | Path to replay file; when set, session is loaded from file and `id`/`input`/`contract` may be omitted. |
 | `id` | Yes (if not using `file`) | Unique replay id. |
 | `input` | Yes (if not using `file`) | Exact user input from the incident. |
 | `contract` | Yes (if not using `file`) | Contract **name** (from main config) or **path** to a contract YAML file. Used to verify the agent’s response. |
@@ -49,6 +50,8 @@ contract: "Finance Agent Contract"
 | `source` | No | e.g. `manual`, `langsmith`. |
 | `expected_failure` | No | Short description of what went wrong (for documentation). |
 | `context` | No | Optional conversation/system context. |
+
+**Validation:** A replay session must have either `file` or both `id` and `input` (inline session).
 
 ---
 

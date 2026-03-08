@@ -109,6 +109,26 @@ This document tracks the implementation progress of flakestorm - The Agent Relia
 
 ### Phase 5: V2 Features (Week 5-7)
 
+#### Environment Chaos & Context Attacks
+- [x] ChaosConfig (tool_faults, llm_faults, context_attacks as list or dict)
+- [x] ChaosInterceptor: memory_poisoning applied to input before invoke; LLM faults (timeout before call, others after)
+- [x] context_attacks: indirect_injection, memory_poisoning (strategy prepend/append/replace), normalize_context_attacks
+- [x] Per-scenario context_attacks in contract.chaos_matrix
+
+#### Behavioral Contracts
+- [x] ContractEngine: (invariant × scenario) cells with optional reset (reset_endpoint / reset_function)
+- [x] system_prompt_leak_probe via contract invariant `probes`; behavior_unchanged with baseline auto/manual
+- [x] Stateful detection and warning when no reset configured
+
+#### Replay Regression
+- [x] ReplaySessionConfig with `file` (load from file) or inline id/input; validation require id+input when no file
+- [x] ReplayConfig.sources (LangSmith project or run_id) with auto_import
+
+#### Scoring & Config
+- [x] ScoringConfig (mutation, chaos, contract, replay) weights must sum to 1.0
+- [x] AgentConfig.reset_endpoint, reset_function; ModelConfig api_key env-only
+- [x] Mutation count max 50 (OSS); 22+ mutation types
+
 #### HuggingFace Integration
 - [x] Create HuggingFaceModelProvider
 - [x] Support GGUF model downloading

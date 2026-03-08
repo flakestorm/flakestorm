@@ -149,7 +149,8 @@ class Orchestrator:
 
         self.state.total_mutations = len(all_mutations)
 
-        # Phase 2: Run mutations against agent
+        # Phase 2: Run mutations against agent (or chaos scenarios)
+        run_description = "Running chaos scenarios..." if self.chaos_only else "Running attacks..."
         if self.show_progress:
             with Progress(
                 SpinnerColumn(),
@@ -160,7 +161,7 @@ class Orchestrator:
                 console=self.console,
             ) as progress:
                 task = progress.add_task(
-                    "Running attacks...",
+                    run_description,
                     total=len(all_mutations),
                 )
 
@@ -285,14 +286,24 @@ class Orchestrator:
                     f"  [green]✓[/green] Agent connection successful ({response.latency_ms:.0f}ms)"
                 )
                 self.console.print()
-                self.console.print(
-                    Panel(
-                        f"[green]✓ Agent is ready![/green]\n\n"
-                        f"[dim]Proceeding with mutation generation for {len(self.config.golden_prompts)} golden prompt(s)...[/dim]",
-                        title="[green]Pre-flight Check Passed[/green]",
-                        border_style="green",
+                if self.chaos_only:
+                    self.console.print(
+                        Panel(
+                            f"[green]✓ Agent is ready![/green]\n\n"
+                            f"[dim]Proceeding with chaos-only run ({len(self.config.golden_prompts)} golden prompt(s), no mutation generation)...[/dim]",
+                            title="[green]Pre-flight Check Passed[/green]",
+                            border_style="green",
+                        )
                     )
-                )
+                else:
+                    self.console.print(
+                        Panel(
+                            f"[green]✓ Agent is ready![/green]\n\n"
+                            f"[dim]Proceeding with mutation generation for {len(self.config.golden_prompts)} golden prompt(s)...[/dim]",
+                            title="[green]Pre-flight Check Passed[/green]",
+                            border_style="green",
+                        )
+                    )
                 self.console.print()
             return True
 

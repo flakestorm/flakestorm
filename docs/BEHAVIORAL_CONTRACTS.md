@@ -63,16 +63,19 @@ contract:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `id` | Yes | Unique identifier for this invariant. |
-| `type` | Yes | Same as run invariants: `contains`, `regex`, `latency`, `valid_json`, `similarity`, `excludes_pii`, `refusal_check`, `completes`, `output_not_empty`, `contains_any`, etc. |
+| `type` | Yes | Same as run invariants: `contains`, `regex`, `latency`, `valid_json`, `similarity`, `excludes_pii`, `refusal_check`, `completes`, `output_not_empty`, `contains_any`, `excludes_pattern`, `behavior_unchanged`, etc. |
 | `severity` | No | `critical` \| `high` \| `medium` \| `low` (default `medium`). Weights the resilience score; **any critical failure** = automatic fail. |
 | `when` | No | `always` \| `tool_faults_active` \| `llm_faults_active` \| `any_chaos_active` \| `no_chaos`. When this invariant is evaluated. |
 | `negate` | No | If true, the check passes when the pattern does **not** match (e.g. “must NOT contain dollar figures”). |
 | `description` | No | Human-readable description. |
-| Plus type-specific | — | `pattern`, `value`, `values`, `max_ms`, `threshold`, etc., same as [invariants](CONFIGURATION_GUIDE.md). |
+| **`probes`** | No | For **system_prompt_leak_probe**: list of probe prompts to run instead of golden_prompts; use with `excludes_pattern` to ensure no leak. |
+| **`baseline`** | No | For `behavior_unchanged`: `auto` or manual baseline string. |
+| **`similarity_threshold`** | No | For `behavior_unchanged`/similarity; default 0.75. |
+| Plus type-specific | — | `pattern`, `patterns`, `value`, `values`, `max_ms`, `threshold`, etc., same as [Configuration Guide](CONFIGURATION_GUIDE.md). |
 
 ### Chaos matrix
 
-Each entry is a **scenario**: a name plus optional `tool_faults`, `llm_faults`, and `context_attacks`. The contract engine runs your golden prompts under each scenario and verifies every invariant. Result: **invariants × scenarios** cells; resilience score is severity-weighted pass rate, and **any critical failure** fails the contract.
+Each entry is a **scenario**: a name plus optional `tool_faults`, `llm_faults`, and `context_attacks`. The contract engine runs golden prompts (or **probes** for that invariant when set) under each scenario and verifies every invariant. Result: **invariants × scenarios** cells; resilience score is severity-weighted pass rate, and **any critical failure** fails the contract.
 
 ---
 
@@ -99,7 +102,7 @@ See [V2 Spec](V2_SPEC.md) for the exact formula and matrix isolation (reset) beh
 
 ## Stateful agents
 
-If your agent keeps state between calls, each (invariant × scenario) cell should start from a clean state. Set **`reset_endpoint`** (HTTP) or **`reset_function`** (Python) in your `agent` config so Flakestorm can reset between cells. If the agent appears stateful and no reset is configured, Flakestorm warns but does not fail.
+If your agent keeps state between calls, each (invariant × scenario) cell should start from a clean state. Set **`agent.reset_endpoint`** (HTTP POST URL, e.g. `http://localhost:8000/reset`) or **`agent.reset_function`** (Python module path, e.g. `myagent:reset_state`) so Flakestorm can reset between cells. If the agent appears stateful (same prompt produces different responses on two calls) and no reset is configured, Flakestorm logs: *"Warning: No reset_endpoint configured. Contract matrix cells may share state. Results may be contaminated. Add reset_endpoint to your config for accurate isolation."* It does not fail the run.
 
 ---
 

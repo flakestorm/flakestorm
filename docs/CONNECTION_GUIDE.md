@@ -42,6 +42,8 @@ This guide explains how to connect FlakeStorm to your agent, covering different 
 
 **Rule of Thumb:** If FlakeStorm and your agent run on the **same machine**, use `localhost`. Otherwise, you need a **public endpoint**.
 
+**Note:** Native CI/CD integrations (scheduled runs, pipeline plugins) are **Cloud only**. OSS users run `flakestorm ci` from their own scripts or job runners.
+
 ---
 
 ## Internal Code Options
@@ -73,6 +75,8 @@ async def flakestorm_agent(input: str) -> str:
 agent:
   endpoint: "my_agent:flakestorm_agent"
   type: "python"  # ← No HTTP endpoint needed!
+  # V2: optional reset between contract matrix cells (stateful agents)
+  # reset_function: "my_agent:reset_state"
 ```
 
 **Benefits:**
@@ -291,13 +295,22 @@ ssh -L 8000:localhost:8000 user@agent-machine
 
 ---
 
+## V2: Reset for stateful agents (contract matrix)
+
+When running **behavioral contracts** (`flakestorm contract run` or `flakestorm ci`), each (invariant × scenario) cell should start from a clean state. Configure one of:
+
+- **`reset_endpoint`** — HTTP POST endpoint (e.g. `http://localhost:8000/reset`) called before each cell.
+- **`reset_function`** — Python module path (e.g. `myagent:reset_state`) for `type: python`; the function is called (or awaited if async) before each cell.
+
+If the agent appears stateful and neither is set, Flakestorm logs a warning. See [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md) and [V2 Spec](V2_SPEC.md).
+
 ## Best Practices
 
 1. **For Development:** Use Python adapter if possible (fastest, simplest)
 2. **For Testing:** Use localhost HTTP endpoint (easy to debug)
-3. **For CI/CD:** Use public endpoint or cloud deployment
+3. **For CI/CD:** Use public endpoint or cloud deployment (native CI/CD is Cloud only)
 4. **For Production Testing:** Use production endpoint with proper authentication
-5. **Security:** Never commit API keys - use environment variables
+5. **Security:** Never commit API keys — use environment variables (V2 enforces env-only for `model.api_key`)
 
 ---
 
@@ -311,6 +324,7 @@ ssh -L 8000:localhost:8000 user@agent-machine
 | Already has HTTP API | Use existing endpoint |
 | Need custom request format | Use `request_template` |
 | Complex response structure | Use `response_path` |
+| Stateful agent + contract (V2) | Use `reset_endpoint` or `reset_function` |
 
 ---
 

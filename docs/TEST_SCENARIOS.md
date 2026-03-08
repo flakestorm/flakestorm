@@ -2,6 +2,8 @@
 
 This document provides concrete, real-world examples of testing AI agents with flakestorm. Each scenario includes the complete setup, expected inputs/outputs, and integration code.
 
+**V2:** Flakestorm supports **22+ mutation types** (prompt-level and system/network-level) with a **max of 50 mutations per run** in OSS. Use `version: "2.0"` in config for chaos, behavioral contracts, and replay regression. See [Configuration Guide](CONFIGURATION_GUIDE.md) and [V2 Spec](V2_SPEC.md).
+
 ---
 
 ## Table of Contents

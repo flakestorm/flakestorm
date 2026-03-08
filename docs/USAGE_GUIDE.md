@@ -25,7 +25,7 @@ This comprehensive guide walks you through using flakestorm to test your AI agen
 
 ### What is flakestorm?
 
-flakestorm is an **adversarial testing framework** for AI agents. It applies chaos engineering principles to systematically test how your AI agents behave under unexpected, malformed, or adversarial inputs.
+flakestorm is an **adversarial testing framework** and **chaos engineering platform** for AI agents. It applies chaos engineering principles to systematically test how your AI agents behave under unexpected, malformed, or adversarial inputs. With **V2** (`version: "2.0"` in config) you get environment chaos (tool/LLM faults, context attacks), behavioral contracts (invariants × chaos matrix), and replay regression; **22+ mutation types** and **max 50 mutations per run** in OSS. API keys for cloud LLM providers must be set via environment variables only (e.g. `api_key: "${OPENAI_API_KEY}"`). See [Configuration Guide](CONFIGURATION_GUIDE.md) and [V2 Spec](V2_SPEC.md).
 
 ### Why Use flakestorm?
 

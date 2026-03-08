@@ -48,14 +48,19 @@ config = FlakeStormConfig.from_yaml(yaml_content)
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `version` | `str` | Config version |
-| `agent` | `AgentConfig` | Agent connection settings |
-| `model` | `ModelConfig` | LLM settings |
-| `mutations` | `MutationConfig` | Mutation generation settings |
+| `version` | `str` | Config version (`1.0` \| `2.0`) |
+| `agent` | `AgentConfig` | Agent connection settings (includes V2 `reset_endpoint`, `reset_function`) |
+| `model` | `ModelConfig` | LLM settings (V2: `api_key` env-only) |
+| `mutations` | `MutationConfig` | Mutation generation (max 50/run OSS, 22+ types) |
 | `golden_prompts` | `list[str]` | Test prompts |
 | `invariants` | `list[InvariantConfig]` | Assertion rules |
 | `output` | `OutputConfig` | Report settings |
 | `advanced` | `AdvancedConfig` | Advanced options |
+| **V2** `chaos` | `ChaosConfig \| None` | Tool/LLM faults and context_attacks (list or dict) |
+| **V2** `contract` | `ContractConfig \| None` | Behavioral contract and chaos_matrix (scenarios may include context_attacks) |
+| **V2** `chaos_matrix` | `list[ChaosScenarioConfig] \| None` | Top-level chaos scenarios when not using contract.chaos_matrix |
+| **V2** `replays` | `ReplayConfig \| None` | Replay sessions (file or inline) and LangSmith sources |
+| **V2** `scoring` | `ScoringConfig \| None` | Weights for mutation, chaos, contract, replay (must sum to 1.0) |
 
 ---
 

@@ -38,27 +38,39 @@ This document provides a comprehensive explanation of each module in the flakest
 ```
 flakestorm/
 ├── core/                    # Core orchestration logic
-│   ├── config.py           # Configuration loading & validation
-│   ├── protocol.py         # Agent adapter interfaces
+│   ├── config.py           # Configuration (V1 + V2: chaos, contract, replays, scoring)
+│   ├── protocol.py         # Agent adapters, create_instrumented_adapter (chaos interceptor)
 │   ├── orchestrator.py     # Main test coordination
 │   ├── runner.py           # High-level test runner
 │   └── performance.py      # Rust/Python bridge
-├── mutations/               # Adversarial input generation
-│   ├── types.py            # Mutation type definitions
+├── chaos/                   # V2 environment chaos
+│   ├── context_attacks.py  # memory_poisoning (input before invoke), indirect_injection, normalize_context_attacks
+│   ├── interceptor.py      # ChaosInterceptor: memory_poisoning + LLM faults (timeout before call, others after)
+│   ├── faults.py           # should_trigger, tool/LLM fault application
+│   ├── llm_proxy.py        # apply_llm_fault (truncated, empty, garbage, rate_limit, response_drift)
+│   └── profiles/           # Built-in chaos profiles
+├── contracts/               # V2 behavioral contracts
+│   ├── engine.py           # ContractEngine: (invariant × scenario) cells, reset, probes, behavior_unchanged
+│   └── matrix.py           # ResilienceMatrix
+├── replay/                  # V2 replay regression
+│   ├── loader.py           # Load replay sessions (file or inline)
+│   └── runner.py           # Replay execution
+├── mutations/               # Adversarial input generation (22+ types, max 50/run OSS)
+│   ├── types.py            # MutationType enum
 │   ├── templates.py        # LLM prompt templates
 │   └── engine.py           # Mutation generation engine
 ├── assertions/              # Response validation
 │   ├── deterministic.py    # Rule-based assertions
 │   ├── semantic.py         # AI-based assertions
 │   ├── safety.py           # Security assertions
-│   └── verifier.py         # Assertion orchestrator
+│   └── verifier.py         # InvariantVerifier (all invariant types including behavior_unchanged)
 ├── reports/                 # Output generation
 │   ├── models.py           # Report data models
 │   ├── html.py             # HTML report generator
 │   ├── json_export.py      # JSON export
 │   └── terminal.py         # Terminal output
 ├── cli/                     # Command-line interface
-│   └── main.py             # Typer CLI commands
+│   └── main.py             # flakestorm run, contract run, replay run, ci
 └── integrations/            # External integrations
     ├── huggingface.py      # HuggingFace model support
     └── embeddings.py       # Local embeddings
@@ -81,22 +93,32 @@ class AgentConfig(BaseModel):
     """Configuration for connecting to the target agent."""
     endpoint: str          # Agent URL or Python module path
     type: AgentType        # http, python, or langchain
-    timeout: int = 30      # Request timeout
+    timeout: int = 30000   # Request timeout (ms)
     headers: dict = {}     # HTTP headers
     request_template: str  # How to format requests
     response_path: str     # JSONPath to extract response
+    # V2: state isolation for contract matrix
+    reset_endpoint: str | None   # HTTP POST URL called before each cell
+    reset_function: str | None  # Python path e.g. myagent:reset_state
 ```
 
 ```python
 class FlakeStormConfig(BaseModel):
     """Root configuration model."""
+    version: str = "1.0"   # 1.0 | 2.0
     agent: AgentConfig
     golden_prompts: list[str]
-    mutations: MutationConfig
-    model: ModelConfig
+    mutations: MutationConfig   # count max 50 in OSS; 22+ mutation types
+    model: ModelConfig         # api_key env-only in V2
     invariants: list[InvariantConfig]
     output: OutputConfig
     advanced: AdvancedConfig
+    # V2 optional
+    chaos: ChaosConfig | None       # tool_faults, llm_faults, context_attacks (list or dict)
+    contract: ContractConfig | None  # invariants + chaos_matrix (scenarios can have context_attacks)
+    chaos_matrix: list[ChaosScenarioConfig] | None  # when not using contract.chaos_matrix
+    replays: ReplayConfig | None     # sessions (file or inline), sources (LangSmith)
+    scoring: ScoringConfig | None    # mutation, chaos, contract, replay weights (must sum to 1.0)
 ```
 
 **Key Functions:**

@@ -86,7 +86,7 @@ This separation allows:
 1. **Automatic Validation**: Built-in validators with clear error messages
    ```python
    class MutationConfig(BaseModel):
-       count: int = Field(ge=1, le=100)  # Validates range automatically
+       count: int = Field(ge=1, le=50)  # OSS max 50 mutations per run; validates range automatically
    ```
 
 2. **Environment Variable Support**: Native expansion
@@ -526,6 +526,8 @@ agent:
 | Different machine | Your machine | `localhost:8000` | ❌ No - use public endpoint or ngrok |
 | CI/CD server | Your machine | `localhost:8000` | ❌ No - use public endpoint |
 | CI/CD server | Cloud (AWS/GCP) | `https://api.example.com` | ✅ Yes |
+
+**Note:** Native CI/CD integrations (scheduled runs, pipeline plugins) are **Cloud only**. In OSS you run `flakestorm ci` from your own scripts or job runners.
 
 **Options for exposing local endpoint:**
 1. **ngrok**: `ngrok http 8000` → get public URL

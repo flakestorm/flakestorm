@@ -51,7 +51,7 @@ With `version: "2.0"` you can add the three **chaos engineering pillars** and a 
 | `replays.sources` | **LangSmith sources** — Import from a LangSmith project or by run ID; `auto_import` re-fetches on each run/ci. | [Replay Regression](REPLAY_REGRESSION.md) |
 | `scoring` | **Unified score** — Weights for mutation_robustness, chaos_resilience, contract_compliance, replay_regression (used by `flakestorm ci`). | See [README](../README.md) “Scores at a glance” |
 
-**Context attacks** (chaos on tool/context, not the user prompt) are configured under `chaos.context_attacks`. See [Context Attacks](CONTEXT_ATTACKS.md).
+**Context attacks** (chaos on tool/context or input before invoke, not the user prompt) are configured under `chaos.context_attacks`. You can use a **list** of attack configs or a **dict** (addendum format, e.g. `memory_poisoning: { payload: "...", strategy: "append" }`). Each scenario in `contract.chaos_matrix` can also define its own `context_attacks`. See [Context Attacks](CONTEXT_ATTACKS.md).
 
 All v1.0 options remain valid; v2.0 blocks are optional and additive.
 
@@ -256,6 +256,8 @@ chain: Runnable = ...  # Your LangChain chain
 | `parse_structured_input` | boolean | `true` | Whether to parse structured golden prompts into key-value pairs |
 | `timeout` | integer | `30000` | Request timeout in ms (1000-300000) |
 | `headers` | object | `{}` | HTTP headers (supports env vars) |
+| **V2** `reset_endpoint` | string | `null` | HTTP endpoint to call before each contract matrix cell (e.g. `/reset`) for state isolation. |
+| **V2** `reset_function` | string | `null` | Python module path to reset function (e.g. `myagent:reset_state`) for state isolation when using `type: python`. |
 
 ---
 
@@ -275,10 +277,11 @@ model:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `provider` | string | `"ollama"` | Model provider |
-| `name` | string | `"qwen3:8b"` | Model name in Ollama |
-| `base_url` | string | `"http://localhost:11434"` | Ollama server URL |
+| `provider` | string | `"ollama"` | Model provider: `ollama`, `openai`, `anthropic`, `google` |
+| `name` | string | `"qwen3:8b"` | Model name (e.g. `gpt-4o-mini`, `gemini-2.0-flash` for cloud) |
+| `base_url` | string | `"http://localhost:11434"` | Ollama server URL or custom OpenAI-compatible endpoint |
 | `temperature` | float | `0.8` | Generation temperature (0.0-2.0) |
+| `api_key` | string | `null` | **Env-only in V2:** use `"${OPENAI_API_KEY}"` etc. Literal API keys are not allowed in config. |
 
 ### Recommended Models
 
@@ -438,9 +441,10 @@ weights:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `count` | integer | `20` | Mutations per golden prompt |
-| `types` | list | original 8 types | Which mutation types to use (22+ available) |
-| `weights` | object | see below | Scoring weights by type |
+| `count` | integer | `20` | Mutations per golden prompt; **max 50 per run in OSS**. |
+| `types` | list | original 8 types | Which mutation types to use (**22+** available). |
+| `weights` | object | see below | Scoring weights by type. |
+| `custom_templates` | object | `{}` | Custom mutation templates (key: name, value: template with `{prompt}` placeholder). |
 
 ### Default Weights
 
@@ -788,7 +792,7 @@ golden_prompts:
 
 Define what "correct behavior" means for your agent.
 
-**⚠️ Important:** flakestorm requires **at least 3 invariants** to ensure comprehensive testing. If you have fewer than 3, you'll get a validation error.
+**⚠️ Important:** flakestorm requires **at least 1 invariant**. Configure multiple invariants for comprehensive testing.
 
 ### Deterministic Checks
 
@@ -888,17 +892,35 @@ invariants:
     description: "Agent must refuse injections"
 ```
 
+### V2 invariant types (contract and run)
+
+| Type | Required Fields | Optional Fields | Description |
+|------|-----------------|-----------------|-------------|
+| `contains_any` | `values` (list) | `description` | Response contains at least one of the strings. |
+| `output_not_empty` | - | `description` | Response is non-empty. |
+| `completes` | - | `description` | Agent completes without error. |
+| `excludes_pattern` | `patterns` (list) | `description` | Response must not match any of the regex patterns (e.g. system prompt leak). |
+| `behavior_unchanged` | - | `baseline` (`auto` or manual string), `similarity_threshold` (default 0.75), `description` | Response remains semantically similar to baseline under chaos; use `baseline: auto` to compute baseline from first run without chaos. |
+
+**Contract-only (V2):** Invariants can include `id`, `severity` (critical | high | medium | low), `when` (always | tool_faults_active | llm_faults_active | any_chaos_active | no_chaos). For **system_prompt_leak_probe**, use type `excludes_pattern` with **`probes`**: a list of probe prompts to run instead of golden_prompts; the agent must not leak system prompt in response (patterns define forbidden content).
+
 ### Invariant Options
 
 | Type | Required Fields | Optional Fields |
 |------|-----------------|-----------------|
 | `contains` | `value` | `description` |
+| `contains_any` | `values` | `description` |
 | `latency` | `max_ms` | `description` |
 | `valid_json` | - | `description` |
 | `regex` | `pattern` | `description` |
 | `similarity` | `expected` | `threshold` (0.8), `description` |
 | `excludes_pii` | - | `description` |
+| `excludes_pattern` | `patterns` | `description` |
 | `refusal_check` | - | `dangerous_prompts`, `description` |
+| `output_not_empty` | - | `description` |
+| `completes` | - | `description` |
+| `behavior_unchanged` | - | `baseline`, `similarity_threshold`, `description` |
+| Contract invariants | - | `id`, `severity`, `when`, `negate`, `probes` (for system_prompt_leak) |
 
 ---
 
@@ -944,14 +966,14 @@ advanced:
 
 ## Scoring (V2)
 
-When using `version: "2.0"` and running `flakestorm ci`, the **overall** score is a weighted combination of up to four components. Configure the weights so they sum to 1.0:
+When using `version: "2.0"` and running `flakestorm ci`, the **overall** score is a weighted combination of up to four components. **Weights must sum to 1.0** (validation enforced):
 
 ```yaml
 scoring:
-  mutation: 0.25    # Weight for mutation robustness score
-  chaos: 0.25       # Weight for chaos-only resilience score
-  contract: 0.25    # Weight for contract compliance (resilience matrix)
-  replay: 0.25      # Weight for replay regression (passed/total sessions)
+  mutation: 0.20    # Weight for mutation robustness score
+  chaos: 0.35       # Weight for chaos-only resilience score
+  contract: 0.35    # Weight for contract compliance (resilience matrix)
+  replay: 0.10      # Weight for replay regression (passed/total sessions)
 ```
 
 Only components that actually run are included; the overall score is the weighted average of the components that ran. See [README](../README.md) “Scores at a glance” and the pillar docs: [Environment Chaos](ENVIRONMENT_CHAOS.md), [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md), [Replay Regression](REPLAY_REGRESSION.md).
