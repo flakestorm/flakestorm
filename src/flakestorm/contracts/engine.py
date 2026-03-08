@@ -59,6 +59,11 @@ def _contract_invariant_to_invariant_config(c: ContractInvariantConfig) -> Invar
     )
 
 
+def _invariant_has_probes(inv: ContractInvariantConfig) -> bool:
+    """True if this invariant uses probe prompts (system_prompt_leak_probe)."""
+    return bool(getattr(inv, "probes", None))
+
+
 def _scenario_to_chaos_config(scenario: ChaosScenarioConfig) -> ChaosConfig:
     """Convert a chaos scenario to ChaosConfig for instrumented adapter."""
     return ChaosConfig(
@@ -166,7 +171,9 @@ class ContractEngine:
                     except Exception:
                         pass
 
-                for prompt in prompts:
+                # system_prompt_leak_probe: use probe prompts instead of golden_prompts
+                prompts_to_run = getattr(inv, "probes", None) or prompts
+                for prompt in prompts_to_run:
                     try:
                         response = await scenario_agent.invoke(prompt)
                         if response.error:

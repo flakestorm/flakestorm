@@ -477,6 +477,11 @@ class ContractInvariantConfig(BaseModel):
     threshold: float | None = None
     baseline: str | None = None
     similarity_threshold: float | None = 0.75
+    # system_prompt_leak_probe: run these prompts and verify response with excludes_pattern
+    probes: list[str] | None = Field(
+        default=None,
+        description="For system_prompt_leak: run these probe prompts and check response does not match patterns",
+    )
 
 
 class ChaosScenarioConfig(BaseModel):
