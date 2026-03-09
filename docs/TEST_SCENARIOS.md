@@ -1,12 +1,21 @@
 # Real-World Test Scenarios
 
-This document provides concrete, real-world examples of testing AI agents with flakestorm. Each scenario includes the complete setup, expected inputs/outputs, and integration code.
+This document provides concrete, real-world examples of testing AI agents with flakestorm across **all V2 pillars**: **mutation** (adversarial prompts), **environment chaos** (tool/LLM faults), **behavioral contracts** (invariants × chaos matrix), and **replay regression** (replay production incidents). Each scenario includes setup, config, and commands where applicable.
 
-**V2:** Flakestorm supports **22+ mutation types** (prompt-level and system/network-level) with a **max of 50 mutations per run** in OSS. Use `version: "2.0"` in config for chaos, behavioral contracts, and replay regression. See [Configuration Guide](CONFIGURATION_GUIDE.md) and [V2 Spec](V2_SPEC.md).
+**V2:** Use `version: "2.0"` in config to enable chaos, contracts, and replay. Flakestorm supports **24 mutation types** (prompt-level and system/network-level) and **max 50 mutations per run** in OSS. See [V2 Spec](V2_SPEC.md) and [V2 Audit](V2_AUDIT.md).
 
 ---
 
 ## Table of Contents
+
+### V2 scenarios (all pillars)
+
+- [V2 Scenario: Environment Chaos](#v2-scenario-environment-chaos) — Tool/LLM fault injection
+- [V2 Scenario: Behavioral Contract × Chaos Matrix](#v2-scenario-behavioral-contract--chaos-matrix) — Invariants under each chaos scenario
+- [V2 Scenario: Replay Regression](#v2-scenario-replay-regression) — Replay production failures
+- [Full V2 example (chaos + contract + replay)](../examples/v2_research_agent/README.md) — Working agent and config
+
+### Mutation-focused scenarios (agent + config examples)
 
 1. [Scenario 1: Customer Service Chatbot](#scenario-1-customer-service-chatbot)
 2. [Scenario 2: Code Generation Agent](#scenario-2-code-generation-agent)
@@ -14,6 +23,95 @@ This document provides concrete, real-world examples of testing AI agents with f
 4. [Scenario 4: Multi-Tool Agent (LangChain)](#scenario-4-multi-tool-agent-langchain)
 5. [Scenario 5: Guardrailed Agent (Safety Testing)](#scenario-5-guardrailed-agent-safety-testing)
 6. [Integration Guide](#integration-guide)
+
+---
+
+## V2 Scenario: Environment Chaos
+
+**Goal:** Test that your agent degrades gracefully when tools or the LLM fail (timeouts, errors, rate limits, malformed responses).
+
+**Commands:** `flakestorm run --chaos` (mutations + chaos) or `flakestorm run --chaos --chaos-only` (golden prompts only, under chaos). Use `--chaos-profile api_outage` (or `degraded_llm`, `hostile_tools`, `high_latency`, `cascading_failure`) for built-in profiles.
+
+**Config (excerpt):**
+
+```yaml
+version: "2.0"
+chaos:
+  tool_faults:
+    - tool: "*"
+      mode: error
+      error_code: 503
+      probability: 0.3
+  llm_faults:
+    - mode: truncated_response
+      max_tokens: 5
+      probability: 0.2
+```
+
+**Docs:** [Environment Chaos](ENVIRONMENT_CHAOS.md), [V2 Audit §8.1](V2_AUDIT.md#1-prd-81--environment-chaos). **Working example:** [v2_research_agent](../examples/v2_research_agent/README.md).
+
+---
+
+## V2 Scenario: Behavioral Contract × Chaos Matrix
+
+**Goal:** Verify that named invariants (with severity) hold under every chaos scenario; each (invariant × scenario) cell is an independent run. Optional `agent.reset_endpoint` or `agent.reset_function` for state isolation.
+
+**Commands:** `flakestorm contract run`, `flakestorm contract validate`, `flakestorm contract score`.
+
+**Config (excerpt):**
+
+```yaml
+version: "2.0"
+agent:
+  reset_endpoint: "http://localhost:8790/reset"
+contract:
+  name: "My Contract"
+  invariants:
+    - id: must-cite
+      type: regex
+      pattern: "(?i)(source|according to)"
+      severity: critical
+    - id: max-latency
+      type: latency
+      max_ms: 60000
+      severity: medium
+  chaos_matrix:
+    - name: "no-chaos"
+      tool_faults: []
+      llm_faults: []
+    - name: "api-outage"
+      tool_faults:
+        - tool: "*"
+          mode: error
+          error_code: 503
+```
+
+**Docs:** [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md), [V2 Spec](V2_SPEC.md) (contract matrix isolation, resilience score). **Working example:** [v2_research_agent](../examples/v2_research_agent/README.md).
+
+---
+
+## V2 Scenario: Replay Regression
+
+**Goal:** Replay a saved session (e.g. production incident) with fixed inputs and tool responses, then verify the agent’s output against a contract.
+
+**Commands:** `flakestorm replay run path/to/session.yaml -c flakestorm.yaml`, `flakestorm replay export --from-report report.json -o ./replays/`. Optional: `flakestorm replay run --from-langsmith RUN_ID --run` to import from LangSmith and run.
+
+**Config (excerpt):**
+
+```yaml
+version: "2.0"
+replays:
+  sessions:
+    - file: "replays/incident_001.yaml"
+  # Optional: sources for LangSmith import
+  # sources: ...
+```
+
+**Session file (e.g. `replays/incident_001.yaml`):** `id`, `input`, `tool_responses` (optional), `contract` (name or path).
+
+**Docs:** [Replay Regression](REPLAY_REGRESSION.md), [V2 Audit §8.3](V2_AUDIT.md#3-prd-83--replay-based-regression). **Working example:** [v2_research_agent](../examples/v2_research_agent/README.md).
+
+---
 
 ---
 

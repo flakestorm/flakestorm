@@ -152,7 +152,7 @@ For the full **V1 vs V2 flow** (mutation-only vs four pillars, contract matrix i
 
 ### Supporting capabilities
 
-- **Adversarial mutations** — 24 mutation types (prompt-level and system/network-level); max 50 mutations per run in OSS. [→ Test Scenarios](docs/TEST_SCENARIOS.md)
+- **Adversarial mutations** — 24 mutation types (prompt-level and system/network-level); max 50 mutations per run in OSS. [→ Test Scenarios](docs/TEST_SCENARIOS.md) for mutation, chaos, contract, and replay examples.
 - **Invariants & assertions** — Deterministic checks, semantic similarity, safety (PII, refusal); configurable per contract.
 - **Robustness score** — For mutation runs: a single weighted score (0–1) of how well the agent handled adversarial prompts. Reported in HTML/JSON and CLI (`results.statistics.robustness_score`).
 - **Unified resilience score** — For full CI: weighted combination of **mutation robustness**, chaos resilience, contract compliance, and replay regression; weights (mutation, chaos, contract, replay) configurable in YAML and must sum to 1.0.
@@ -229,7 +229,7 @@ See [Roadmap](ROADMAP.md) for the full plan. Highlights:
 - [📖 Usage Guide](docs/USAGE_GUIDE.md) - Complete end-to-end guide (includes local setup)
 - [⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md) - All configuration options
 - [🔌 Connection Guide](docs/CONNECTION_GUIDE.md) - How to connect FlakeStorm to your agent
-- [🧪 Test Scenarios](docs/TEST_SCENARIOS.md) - Real-world examples with code
+- [🧪 Test Scenarios](docs/TEST_SCENARIOS.md) - Real-world examples for mutation, chaos, contract, and replay (V2)
 - [📂 Example: chaos, contracts & replay](examples/v2_research_agent/README.md) - Working agent and config you can run
 - [🔗 Integrations Guide](docs/INTEGRATIONS_GUIDE.md) - HuggingFace models & semantic similarity
 - [🤖 LLM Providers](docs/LLM_PROVIDERS.md) - OpenAI, Claude, Gemini (env-only API keys)
@@ -254,7 +254,6 @@ See [Roadmap](ROADMAP.md) for the full plan. Highlights:
 ### Reference
 - [📋 API Specification](docs/API_SPECIFICATION.md) - API reference
 - [🧪 Testing Guide](docs/TESTING_GUIDE.md) - How to run and write tests
-- [✅ Implementation Checklist](docs/IMPLEMENTATION_CHECKLIST.md) - Development progress
 
 ## Cloud Version (Early Access)
 
