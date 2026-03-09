@@ -18,7 +18,7 @@
   <a href="https://pypi.org/project/flakestorm/">
     <img src="https://img.shields.io/pypi/dm/flakestorm.svg" alt="PyPI downloads">
   </a>
-  
+
   <a href="https://github.com/flakestorm/flakestorm/releases">
     <img src="https://img.shields.io/github/v/release/flakestorm/flakestorm" alt="Latest Release">
   </a>
@@ -134,9 +134,11 @@ Flakestorm supports several modes; you can use one or combine them:
 - **Chaos only** — Golden prompts → agent with fault-injected tools/LLM → invariants. *Does the agent handle bad environments?*
 - **Contract** — Golden prompts → agent under each chaos scenario → verify named invariants across a matrix. *Does the agent obey its rules under every failure mode?*
 - **Replay** — Recorded production input + recorded tool responses → agent → contract. *Did we fix this incident?*
-- **Mutation (optional)** — Golden prompts → adversarial mutations (22+ types, max 50/run) → agent (optionally under chaos) → invariants. *Does the agent handle bad inputs (and optionally bad environments)?*
+- **Mutation (optional)** — Golden prompts → adversarial mutations (24 types, max 50/run) → agent (optionally under chaos) → invariants. *Does the agent handle bad inputs (and optionally bad environments)?*
 
 You define **golden prompts**, **invariants** (or a full **contract** with severity and chaos matrix), and optionally **chaos** (tool/LLM faults) and **replay** sessions. Flakestorm runs the chosen mode(s), checks responses against your rules, and produces a **robustness score** (mutation or chaos-only runs) or **resilience score** (contract run), plus HTML report. Use `flakestorm run`, `flakestorm contract run`, `flakestorm replay run`, or `flakestorm ci` for the combined overall score (OSS: run from CLI or your own scripts; **native CI/CD integrations** — scheduled runs, pipeline plugins — are **Cloud only**).
+
+For the full **V1 vs V2 flow** (mutation-only vs four pillars, contract matrix isolation, resilience score formula), see the [Usage Guide](docs/USAGE_GUIDE.md#how-it-works).
 
 > **Note**: Mutation generation uses a local LLM (Ollama) or cloud APIs (OpenAI, Claude, Gemini). API keys via environment variables only. See [LLM Providers](docs/LLM_PROVIDERS.md).
 
@@ -150,7 +152,7 @@ You define **golden prompts**, **invariants** (or a full **contract** with sever
 
 ### Supporting capabilities
 
-- **Adversarial mutations** — 22+ mutation types (prompt-level and system/network-level); max 50 mutations per run in OSS. [→ Test Scenarios](docs/TEST_SCENARIOS.md)
+- **Adversarial mutations** — 24 mutation types (prompt-level and system/network-level); max 50 mutations per run in OSS. [→ Test Scenarios](docs/TEST_SCENARIOS.md)
 - **Invariants & assertions** — Deterministic checks, semantic similarity, safety (PII, refusal); configurable per contract.
 - **Robustness score** — For mutation runs: a single weighted score (0–1) of how well the agent handled adversarial prompts. Reported in HTML/JSON and CLI (`results.statistics.robustness_score`).
 - **Unified resilience score** — For full CI: weighted combination of **mutation robustness**, chaos resilience, contract compliance, and replay regression; weights (mutation, chaos, contract, replay) configurable in YAML and must sum to 1.0.
@@ -163,7 +165,7 @@ You define **golden prompts**, **invariants** (or a full **contract** with sever
 ## Open Source vs Cloud
 
 **Open Source (Always Free):**
-- Core chaos engine with all 22+ mutation types (max 50 per run; no artificial feature gating)
+- Core chaos engine with all 24 mutation types (max 50 per run; no artificial feature gating)
 - Local execution for fast experimentation
 - Run from CLI or your own scripts (no native CI/CD; that’s Cloud only)
 - Full transparency and extensibility
@@ -276,4 +278,3 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 <p align="center">
   ❤️ <a href="https://github.com/sponsors/flakestorm">Sponsor Flakestorm on GitHub</a>
 </p>
- 

@@ -25,7 +25,10 @@ This comprehensive guide walks you through using flakestorm to test your AI agen
 
 ### What is flakestorm?
 
-flakestorm is an **adversarial testing framework** and **chaos engineering platform** for AI agents. It applies chaos engineering principles to systematically test how your AI agents behave under unexpected, malformed, or adversarial inputs. With **V2** (`version: "2.0"` in config) you get environment chaos (tool/LLM faults, context attacks), behavioral contracts (invariants × chaos matrix), and replay regression; **22+ mutation types** and **max 50 mutations per run** in OSS. API keys for cloud LLM providers must be set via environment variables only (e.g. `api_key: "${OPENAI_API_KEY}"`). See [Configuration Guide](CONFIGURATION_GUIDE.md) and [V2 Spec](V2_SPEC.md).
+flakestorm is an **adversarial testing framework** and **chaos engineering platform** for AI agents. It applies chaos engineering principles to systematically test how your AI agents behave under unexpected, malformed, or adversarial inputs.
+
+- **V1** (`version: "1.0"` or omitted): Mutation-only mode — golden prompts → mutation engine → agent → invariants → **robustness score**. Ideal for quick adversarial input testing.
+- **V2** (`version: "2.0"` in config): Full chaos platform — **Environment Chaos** (tool/LLM faults, context attacks), **Behavioral Contracts** (invariants × chaos matrix with per-cell isolation), and **Replay Regression** (replay production incidents). You get **24 mutation types** and **max 50 mutations per run** in OSS; plus `flakestorm run --chaos`, `flakestorm contract run`, `flakestorm replay run`, and `flakestorm ci` for a unified **resilience score**. API keys for cloud LLM providers must be set via environment variables only (e.g. `api_key: "${OPENAI_API_KEY}"`). See [Configuration Guide](CONFIGURATION_GUIDE.md), [V2 Spec](V2_SPEC.md), and [V2 Audit](V2_AUDIT.md).
 
 ### Why Use flakestorm?
 
@@ -39,46 +42,43 @@ flakestorm is an **adversarial testing framework** and **chaos engineering platf
 
 ### How It Works
 
+Flakestorm supports **V1 (mutation-only)** and **V2 (full chaos platform)**. The flow depends on your config version and which commands you run.
+
+#### V1 / Mutation-only flow
+
+With a V1 config (or V2 config without `--chaos`), you get the classic adversarial flow:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         flakestorm FLOW                           │
+│              flakestorm V1 — MUTATION-ONLY FLOW                   │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   1. GOLDEN PROMPTS          2. MUTATION ENGINE                 │
-│   ┌─────────────────┐        ┌─────────────────┐               │
-│   │ "Book a flight  │  ───►  │ Local LLM       │               │
-│   │  from NYC to LA"│        │ (Qwen/Ollama)   │               │
-│   └─────────────────┘        └────────┬────────┘               │
-│                                       │                         │
-│                                       ▼                         │
-│                              ┌─────────────────┐               │
-│                              │ Mutated Prompts │               │
-│                              │ • Typos         │               │
-│                              │ • Paraphrases   │               │
-│                              │ • Injections    │               │
-│                              └────────┬────────┘               │
-│                                       │                         │
-│   3. YOUR AGENT                       ▼                         │
-│   ┌─────────────────┐        ┌─────────────────┐               │
-│   │ AI Agent        │  ◄───  │ Test Runner     │               │
-│   │ (HTTP/Python)   │        │ (Async)         │               │
-│   └────────┬────────┘        └─────────────────┘               │
-│            │                                                    │
-│            ▼                                                    │
-│   4. VERIFICATION            5. REPORTING                       │
-│   ┌─────────────────┐        ┌─────────────────┐               │
-│   │ Invariant       │  ───►  │ HTML/JSON/CLI   │               │
-│   │ Assertions      │        │ Reports         │               │
-│   └─────────────────┘        └─────────────────┘               │
-│                                       │                         │
-│                                       ▼                         │
-│                              ┌─────────────────┐               │
-│                              │ Robustness      │               │
-│                              │ Score: 0.85     │               │
-│                              └─────────────────┘               │
-│                                                                 │
+│  1. GOLDEN PROMPTS  →  2. MUTATION ENGINE (Local LLM)            │
+│     "Book a flight"       → Mutated prompts (typos, paraphrases,  │
+│                            injections, encoding, etc. — 24 types)│
+│                                        ↓                         │
+│  3. YOUR AGENT  ←  Test Runner sends each mutated prompt         │
+│     (HTTP/Python)       ↓                                         │
+│  4. INVARIANT ASSERTIONS  →  5. REPORTING                        │
+│     (contains, latency, similarity, safety)  →  Robustness Score │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Commands:** `flakestorm run` (no `--chaos`) → **Robustness score** (0–1).
+
+#### V2 flow — Four pillars
+
+With **`version: "2.0"`** in your config, Flakestorm adds environment chaos, behavioral contracts, and replay regression. See [V2 Spec](V2_SPEC.md) and [V2 Audit](V2_AUDIT.md).
+
+| Pillar | What runs | Score / output |
+|--------|-----------|----------------|
+| **Mutation run** | Golden prompts → 24 mutation types → agent → invariants | **Robustness score** (0–1). Use `flakestorm run` or `flakestorm run --chaos` to include chaos. |
+| **Environment chaos** | Fault injection into tools and LLM (timeouts, errors, rate limits, malformed responses, context attacks) | **Chaos resilience** (0–1). Use `flakestorm run --chaos` (with mutations) or `flakestorm run --chaos --chaos-only` (no mutations). |
+| **Behavioral contracts** | Contracts (invariants × severity) × chaos matrix scenarios; each cell is an independent run (optional reset per cell). | **Resilience score** (0–100%). Use `flakestorm contract run`. Per-contract formula: weighted by severity (critical×3, high×2, medium×1); **auto-FAIL** if any critical fails. |
+| **Replay regression** | Replay saved sessions (e.g. production incidents) and verify against a contract. | Per-session pass/fail; **replay regression** score when run via CI. Use `flakestorm replay run [path]`. |
+
+**Unified CI:** `flakestorm ci` runs mutation run, contract run (if configured), chaos-only run (if chaos configured), and all replay sessions; then computes an **overall resilience score** from `scoring.weights` (default: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10). Weights must sum to 1.0.
+
+**Contract matrix isolation (V2):** Each (invariant × scenario) cell is independent. Configure `agent.reset_endpoint` (HTTP) or `agent.reset_function` (Python) to clear agent state between cells; if not set and the agent is stateful, Flakestorm warns. See [V2 Spec — Contract matrix isolation](V2_SPEC.md#contract-matrix-isolation).
 
 ---
 
@@ -819,7 +819,7 @@ golden_prompts:
 
 ### Mutation Types
 
-flakestorm generates adversarial variations of your golden prompts across 22+ mutation types organized into categories:
+flakestorm generates adversarial variations of your golden prompts across 24 mutation types organized into categories:
 
 #### Prompt-Level Attacks
 
@@ -924,6 +924,21 @@ Score = (Weighted Passed Tests) / (Total Weighted Tests)
 - **0.8-0.9**: Good - Minor improvements needed
 - **0.7-0.8**: Fair - Needs work
 - **<0.7**: Poor - Significant reliability issues
+
+#### V2 Resilience Score (contract + overall)
+
+When using **V2** (`version: "2.0"`) with behavioral contracts and/or `flakestorm ci`, two additional scores apply. See [V2 Spec](V2_SPEC.md#resilience-score-formula).
+
+**Per-contract score** (for `flakestorm contract run`):
+
+```
+score = (Σ(passed_critical×3) + Σ(passed_high×2) + Σ(passed_medium×1))
+      / (Σ(total_critical×3) + Σ(total_high×2) + Σ(total_medium×1)) × 100
+```
+
+- **Automatic FAIL:** If any **critical** severity invariant fails in any scenario, the overall result is FAIL regardless of the numeric score.
+
+**Overall score** (for `flakestorm ci`): Configurable via **`scoring.weights`**. Weights must **sum to 1.0**. Default: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10. The CI run combines mutation robustness, chaos resilience, contract compliance, and replay regression into one weighted overall resilience score.
 
 ---
 
@@ -1106,7 +1121,7 @@ flakestorm provides 22+ mutation types organized into **Prompt-Level Attacks** a
 ### Choosing Mutation Types
 
 **Comprehensive Testing (Recommended):**
-Use all 22+ types for complete coverage:
+Use all 24 types for complete coverage:
 ```yaml
 types:
   # Original 8 types
@@ -1206,7 +1221,7 @@ The 22+ mutation types work together to provide comprehensive robustness testing
 - **Infrastructure**: HTTP Header Injection, Payload Size Attack, Content-Type Confusion, Query Parameter Poisoning, Request Method Attack, Protocol-Level Attack, Resource Exhaustion, Concurrent Request Pattern, Timeout Manipulation
 - **Temporal/Context**: Temporal Attack, Multi-Turn Attack
 
-For comprehensive testing, use all 22+ types. For focused testing:
+For comprehensive testing, use all 24 types. For focused testing:
 - **Security-focused**: Emphasize Prompt Injection, Advanced Jailbreak, Protocol-Level Attack, HTTP Header Injection
 - **UX-focused**: Emphasize Noise, Tone Shift, Context Manipulation, Language Mixing
 - **Infrastructure-focused**: Emphasize all system/network-level types
