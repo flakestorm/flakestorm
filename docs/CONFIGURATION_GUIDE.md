@@ -53,7 +53,7 @@ With `version: "2.0"` you can add the three **chaos engineering pillars** and a 
 
 **Context attacks** (chaos on tool/context or input before invoke, not the user prompt) are configured under `chaos.context_attacks`. You can use a **list** of attack configs or a **dict** (addendum format, e.g. `memory_poisoning: { payload: "...", strategy: "append" }`). Each scenario in `contract.chaos_matrix` can also define its own `context_attacks`. See [Context Attacks](CONTEXT_ATTACKS.md).
 
-All v1.0 options remain valid; v2.0 blocks are optional and additive.
+All v1.0 options remain valid; v2.0 blocks are optional and additive. Implementation status: all V2 gaps are closed (see [GAP_VERIFICATION](GAP_VERIFICATION.md)). Mutations: **22+ types**, **max 50 per run** in OSS.
 
 ---
 

@@ -376,6 +376,11 @@ results.get_by_prompt("...")  # Filter by prompt
 
 # Serialization
 results.to_dict()  # Full JSON-serializable dict
+
+# V2: Resilience and contract/replay (when config has contract/replays)
+results.resilience_scores   # dict: mutation_robustness, chaos_resilience, contract_compliance, replay_regression
+results.contract_compliance # ContractRunResult | None (when contract run was executed)
+# Replay results are reported via flakestorm replay run --output; see Reports below.
 ```
 
 #### MutationResult
@@ -443,6 +448,8 @@ reporter.print_failures(limit=10)
 reporter.print_full_report()
 ```
 
+**V2 reports:** Contract runs (`flakestorm contract run --output report.html`) and replay runs (`flakestorm replay run --output report.html`) produce HTML reports that include **suggested actions** for failed cells or sessions (e.g. add reset_endpoint, tighten invariants, fix tool behavior). See [Behavioral Contracts](BEHAVIORAL_CONTRACTS.md) and [Replay Regression](REPLAY_REGRESSION.md).
+
 ---
 
 ## CLI Commands
@@ -459,16 +466,19 @@ flakestorm init --force            # Overwrite existing
 
 ### `flakestorm run`
 
-Run reliability tests.
+Run reliability tests (mutation run; optionally with chaos).
 
 ```bash
-flakestorm run                              # Default config
+flakestorm run                              # Default config (mutation only)
 flakestorm run --config custom.yaml         # Custom config
-flakestorm run --output json                # JSON output
-flakestorm run --output terminal            # Terminal only
-flakestorm run --min-score 0.9 --ci         # CI mode
-flakestorm run --verify-only                # Just verify setup
-flakestorm run --quiet                      # Minimal output
+flakestorm run --chaos                       # Apply chaos (tool/LLM faults, context_attacks) during mutation run
+flakestorm run --chaos-only                  # Chaos-only run (no mutations); requires chaos config
+flakestorm run --chaos-profile api_outage    # Use a built-in chaos profile
+flakestorm run --output json                 # JSON output
+flakestorm run --output terminal             # Terminal only
+flakestorm run --min-score 0.9 --ci          # CI mode
+flakestorm run --verify-only                 # Just verify setup
+flakestorm run --quiet                       # Minimal output
 ```
 
 ### `flakestorm verify`
@@ -503,6 +513,38 @@ else
 fi
 ```
 
+### V2: `flakestorm contract run` / `validate` / `score`
+
+Run behavioral contract tests (invariants × chaos matrix).
+
+```bash
+flakestorm contract run                      # Run contract matrix; progress and score in terminal
+flakestorm contract run --output report.html  # Save HTML report with suggested actions for failed cells
+flakestorm contract validate                 # Validate contract config only
+flakestorm contract score                    # Output contract resilience score only
+```
+
+### V2: `flakestorm replay run` / `export`
+
+Replay regression: run saved sessions and verify against a contract.
+
+```bash
+flakestorm replay run                        # Replay sessions from config (file or inline)
+flakestorm replay run path/to/session.yaml   # Replay a single session file
+flakestorm replay run path/to/replays/       # Replay all sessions in directory
+flakestorm replay run --output report.html   # Save HTML report with suggested actions for failed sessions
+flakestorm replay export --from-report FILE  # Export from an existing report
+```
+
+### V2: `flakestorm ci`
+
+Run full CI pipeline: mutation run, contract run (if configured), chaos-only (if chaos configured), replay (if configured); then compute overall weighted score from `scoring.weights`.
+
+```bash
+flakestorm ci
+flakestorm ci --config custom.yaml
+```
+
 ---
 
 ## Environment Variables
@@ -511,6 +553,8 @@ fi
 |----------|-------------|
 | `OLLAMA_HOST` | Override Ollama server URL |
 | Custom headers | Expanded in config via `${VAR}` syntax |
+
+**V2 — API keys (env-only):** Model API keys must not be literal in config. Use environment variables and reference them in config (e.g. `api_key: "${OPENAI_API_KEY}"`). Supported: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, etc. See [LLM Providers](LLM_PROVIDERS.md).
 
 ---
 

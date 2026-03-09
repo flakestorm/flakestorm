@@ -1,6 +1,6 @@
 # Real-World Test Scenarios
 
-This document provides concrete, real-world examples of testing AI agents with flakestorm: environment chaos (tool/LLM faults), behavioral contracts (invariants × chaos matrix), replay regression, and adversarial mutations. Each scenario includes setup, config, and commands where applicable. Flakestorm supports **24 mutation types** and **max 50 mutations per run** in OSS. See [Configuration Guide](CONFIGURATION_GUIDE.md), [Spec](V2_SPEC.md), and [Audit](V2_AUDIT.md).
+This document provides concrete, real-world examples of testing AI agents with flakestorm: environment chaos (tool/LLM faults), behavioral contracts (invariants × chaos matrix), replay regression, and adversarial mutations. Each scenario includes setup, config, and commands where applicable. Flakestorm supports **22+ mutation types** and **max 50 mutations per run** in OSS. See [Configuration Guide](CONFIGURATION_GUIDE.md), [Spec](V2_SPEC.md), and [Audit](V2_AUDIT.md).
 
 ---
 

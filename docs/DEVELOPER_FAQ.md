@@ -7,14 +7,15 @@ This document answers common questions developers might have about the flakestor
 ## Table of Contents
 
 1. [Architecture Questions](#architecture-questions)
-2. [Configuration System](#configuration-system)
-3. [Mutation Engine](#mutation-engine)
-4. [Assertion System](#assertion-system)
-5. [Performance & Rust](#performance--rust)
-6. [Agent Adapters](#agent-adapters)
-7. [Testing & Quality](#testing--quality)
-8. [Extending flakestorm](#extending-flakestorm)
-9. [Common Issues](#common-issues)
+2. [V2 and Documentation](#v2-and-documentation)
+3. [Configuration System](#configuration-system)
+4. [Mutation Engine](#mutation-engine)
+5. [Assertion System](#assertion-system)
+6. [Performance & Rust](#performance--rust)
+7. [Agent Adapters](#agent-adapters)
+8. [Testing & Quality](#testing--quality)
+9. [Extending flakestorm](#extending-flakestorm)
+10. [Common Issues](#common-issues)
 
 ---
 
@@ -74,6 +75,39 @@ This separation allows:
 - `runner.py` to provide a clean facade
 - `orchestrator.py` to be refactored without breaking the public API
 - Different entry points (CLI, programmatic) to use the same core logic
+
+---
+
+## V2 and Documentation
+
+### Q: What is V2 and where is it documented?
+
+**A:** **V2** (`version: "2.0"` in config) adds three chaos-engineering pillars and a unified score. All gaps from the V2 PRD are closed (see [GAP_VERIFICATION](GAP_VERIFICATION.md)). Authoritative references:
+
+| Topic | Document |
+|-------|----------|
+| Spec clarifications (reset, behavior_unchanged, probes, scoring) | [V2_SPEC](V2_SPEC.md) |
+| Environment chaos (tool/LLM faults, profiles, response_drift) | [ENVIRONMENT_CHAOS](ENVIRONMENT_CHAOS.md) |
+| Behavioral contracts (chaos_matrix, invariants, reset_endpoint/reset_function) | [BEHAVIORAL_CONTRACTS](BEHAVIORAL_CONTRACTS.md) |
+| Replay regression (sessions, LangSmith, contract resolution) | [REPLAY_REGRESSION](REPLAY_REGRESSION.md) |
+| Context attacks (memory_poisoning, system_prompt_leak_probe, list/dict config) | [CONTEXT_ATTACKS](CONTEXT_ATTACKS.md) |
+| LLM providers and API keys (env-only) | [LLM_PROVIDERS](LLM_PROVIDERS.md) |
+
+### Q: How do chaos, contract, and replay fit into the codebase?
+
+**A:** In V2:
+
+- **Chaos:** `chaos/` (interceptor, tool_proxy, llm_proxy, faults, profiles). The runner wraps the agent with `ChaosInterceptor` when `--chaos` or `--chaos-only` is used. Tool faults apply by `match_url` or `tool: "*"`; LLM faults (truncated, empty, garbage, rate_limit, response_drift) are applied in the interceptor.
+- **Contract:** `contracts/` (engine, matrix). When config has `contract` + `chaos_matrix`, `FlakeStormRunner.run()` runs the contract engine: resets between cells (if `reset_endpoint`/`reset_function`), runs invariants (including `behavior_unchanged` and probes for system_prompt_leak), and attaches `contract_compliance` to results. Scoring uses severity weights; any critical failure → FAIL.
+- **Replay:** `replay/` (loader, runner). Sessions loaded from file or inline (or LangSmith); contract resolved by name or path. `flakestorm replay run [path]` replays and verifies against the contract; reports include suggested actions for failed sessions.
+
+### Q: Why must API keys be environment variables only in V2?
+
+**A:** Security: literal API keys in config files get committed to version control. V2 validates at load time and fails with a clear message if a literal key is detected. Use `api_key: "${OPENAI_API_KEY}"` (and set the variable in the environment or CI secrets).
+
+### Q: What does `flakestorm ci` run?
+
+**A:** It runs, in order: (1) mutation run (with chaos if configured), (2) contract run if `contract` + `chaos_matrix` are configured, (3) chaos-only run if chaos is configured, (4) replay run if `replays` is configured. Then it computes an **overall weighted score** from `scoring.weights` (mutation, chaos, contract, replay); weights must sum to 1.0. Default weights: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10.
 
 ---
 

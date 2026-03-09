@@ -8,12 +8,13 @@ This guide explains how to run, write, and expand tests for flakestorm. It cover
 
 1. [Running Tests](#running-tests)
 2. [Test Structure](#test-structure)
-3. [Writing Tests: Agent Adapters](#writing-tests-agent-adapters)
-4. [Writing Tests: Orchestrator](#writing-tests-orchestrator)
-5. [Writing Tests: Report Generation](#writing-tests-report-generation)
-6. [Integration Tests](#integration-tests)
-7. [CLI Tests](#cli-tests)
-8. [Test Fixtures](#test-fixtures)
+3. [V2 Integration Tests](#v2-integration-tests)
+4. [Writing Tests: Agent Adapters](#writing-tests-agent-adapters)
+5. [Writing Tests: Orchestrator](#writing-tests-orchestrator)
+6. [Writing Tests: Report Generation](#writing-tests-report-generation)
+7. [Integration Tests](#integration-tests)
+8. [CLI Tests](#cli-tests)
+9. [Test Fixtures](#test-fixtures)
 
 ---
 
@@ -67,6 +68,9 @@ pytest tests/test_performance.py
 
 # Integration tests (requires Ollama)
 pytest tests/test_integration.py
+
+# V2 integration tests (chaos, contract, replay)
+pytest tests/test_chaos_integration.py tests/test_contract_integration.py tests/test_replay_integration.py
 ```
 
 ---
@@ -76,17 +80,34 @@ pytest tests/test_integration.py
 ```
 tests/
 ├── __init__.py
-├── conftest.py           # Shared fixtures
-├── test_config.py        # Configuration loading tests
-├── test_mutations.py     # Mutation engine tests
-├── test_assertions.py    # Assertion checkers tests
-├── test_performance.py   # Rust/Python bridge tests
-├── test_adapters.py      # Agent adapter tests (TO CREATE)
-├── test_orchestrator.py  # Orchestrator tests (TO CREATE)
-├── test_reports.py       # Report generation tests (TO CREATE)
-├── test_cli.py           # CLI command tests (TO CREATE)
-└── test_integration.py   # Full integration tests (TO CREATE)
+├── conftest.py                    # Shared fixtures
+├── test_config.py                 # Configuration loading tests
+├── test_mutations.py              # Mutation engine tests
+├── test_assertions.py             # Assertion checkers tests
+├── test_performance.py            # Rust/Python bridge tests
+├── test_adapters.py               # Agent adapter tests
+├── test_orchestrator.py           # Orchestrator tests
+├── test_reports.py                # Report generation tests
+├── test_cli.py                    # CLI command tests
+├── test_integration.py            # Full integration tests
+├── test_chaos_integration.py      # V2: chaos (tool/LLM faults, interceptor)
+├── test_contract_integration.py   # V2: contract (N×M matrix, score, critical fail)
+└── test_replay_integration.py     # V2: replay (session → replay → pass/fail)
 ```
+
+---
+
+## V2 Integration Tests
+
+V2 adds three integration test modules; all gaps are closed (see [GAP_VERIFICATION](GAP_VERIFICATION.md)).
+
+| Module | What it tests |
+|--------|----------------|
+| `test_chaos_integration.py` | Chaos interceptor, tool faults (match_url/tool *), LLM faults (truncated, empty, garbage, rate_limit, response_drift). |
+| `test_contract_integration.py` | Contract engine: invariants × chaos matrix, reset between cells, resilience score (severity-weighted), critical failure → FAIL. |
+| `test_replay_integration.py` | Replay loader (file/format), ReplayRunner verification against contract, contract resolution by name/path. |
+
+For CI pipelines that use V2, run the full suite including these; `flakestorm ci` runs mutation, contract (if configured), chaos-only (if configured), and replay (if configured), then computes the overall weighted score from `scoring.weights`.
 
 ---
 

@@ -28,7 +28,7 @@ This comprehensive guide walks you through using flakestorm to test your AI agen
 flakestorm is an **adversarial testing framework** and **chaos engineering platform** for AI agents. It applies chaos engineering principles to systematically test how your AI agents behave under unexpected, malformed, or adversarial inputs.
 
 - **V1** (`version: "1.0"` or omitted): Mutation-only mode — golden prompts → mutation engine → agent → invariants → **robustness score**. Ideal for quick adversarial input testing.
-- **V2** (`version: "2.0"` in config): Full chaos platform — **Environment Chaos** (tool/LLM faults, context attacks), **Behavioral Contracts** (invariants × chaos matrix with per-cell isolation), and **Replay Regression** (replay production incidents). You get **24 mutation types** and **max 50 mutations per run** in OSS; plus `flakestorm run --chaos`, `flakestorm contract run`, `flakestorm replay run`, and `flakestorm ci` for a unified **resilience score**. API keys for cloud LLM providers must be set via environment variables only (e.g. `api_key: "${OPENAI_API_KEY}"`). See [Configuration Guide](CONFIGURATION_GUIDE.md), [V2 Spec](V2_SPEC.md), and [V2 Audit](V2_AUDIT.md).
+- **V2** (`version: "2.0"` in config): Full chaos platform — **Environment Chaos** (tool/LLM faults, context attacks), **Behavioral Contracts** (invariants × chaos matrix with per-cell isolation), and **Replay Regression** (replay production incidents). You get **22+ mutation types** and **max 50 mutations per run** in OSS; plus `flakestorm run --chaos`, `flakestorm contract run`, `flakestorm replay run`, and `flakestorm ci` for a unified **resilience score**. API keys for cloud LLM providers must be set via environment variables only (e.g. `api_key: "${OPENAI_API_KEY}"`). See [Configuration Guide](CONFIGURATION_GUIDE.md), [V2 Spec](V2_SPEC.md), and [GAP_VERIFICATION](GAP_VERIFICATION.md).
 
 ### Why Use flakestorm?
 
@@ -54,7 +54,7 @@ With a V1 config (or V2 config without `--chaos`), you get the classic adversari
 ├─────────────────────────────────────────────────────────────────┤
 │  1. GOLDEN PROMPTS  →  2. MUTATION ENGINE (Local LLM)            │
 │     "Book a flight"       → Mutated prompts (typos, paraphrases,  │
-│                            injections, encoding, etc. — 24 types)│
+│                            injections, encoding, etc. — 22+ types)│
 │                                        ↓                         │
 │  3. YOUR AGENT  ←  Test Runner sends each mutated prompt         │
 │     (HTTP/Python)       ↓                                         │
@@ -71,12 +71,14 @@ With **`version: "2.0"`** in your config, Flakestorm adds environment chaos, beh
 
 | Pillar | What runs | Score / output |
 |--------|-----------|----------------|
-| **Mutation run** | Golden prompts → 24 mutation types → agent → invariants | **Robustness score** (0–1). Use `flakestorm run` or `flakestorm run --chaos` to include chaos. |
+| **Mutation run** | Golden prompts → 22+ mutation types → agent → invariants | **Robustness score** (0–1). Use `flakestorm run` or `flakestorm run --chaos` to include chaos. |
 | **Environment chaos** | Fault injection into tools and LLM (timeouts, errors, rate limits, malformed responses, context attacks) | **Chaos resilience** (0–1). Use `flakestorm run --chaos` (with mutations) or `flakestorm run --chaos --chaos-only` (no mutations). |
 | **Behavioral contracts** | Contracts (invariants × severity) × chaos matrix scenarios; each cell is an independent run (optional reset per cell). | **Resilience score** (0–100%). Use `flakestorm contract run`. Per-contract formula: weighted by severity (critical×3, high×2, medium×1); **auto-FAIL** if any critical fails. |
 | **Replay regression** | Replay saved sessions (e.g. production incidents) and verify against a contract. | Per-session pass/fail; **replay regression** score when run via CI. Use `flakestorm replay run [path]`. |
 
 **Unified CI:** `flakestorm ci` runs mutation run, contract run (if configured), chaos-only run (if chaos configured), and all replay sessions; then computes an **overall resilience score** from `scoring.weights` (default: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10). Weights must sum to 1.0.
+
+**Reports:** Use `flakestorm contract run --output report.html` and `flakestorm replay run --output report.html` to save HTML reports; both include **suggested actions** for failed cells or sessions (e.g. add reset_endpoint, tighten invariants). Replay accepts a single session file or a directory: `flakestorm replay run path/to/session.yaml` or `flakestorm replay run path/to/replays/`.
 
 **Contract matrix isolation (V2):** Each (invariant × scenario) cell is independent. Configure `agent.reset_endpoint` (HTTP) or `agent.reset_function` (Python) to clear agent state between cells; if not set and the agent is stateful, Flakestorm warns. See [V2 Spec — Contract matrix isolation](V2_SPEC.md#contract-matrix-isolation).
 
@@ -819,7 +821,7 @@ golden_prompts:
 
 ### Mutation Types
 
-flakestorm generates adversarial variations of your golden prompts across 24 mutation types organized into categories:
+flakestorm generates adversarial variations of your golden prompts across 22+ mutation types organized into categories:
 
 #### Prompt-Level Attacks
 
@@ -1121,7 +1123,7 @@ flakestorm provides 22+ mutation types organized into **Prompt-Level Attacks** a
 ### Choosing Mutation Types
 
 **Comprehensive Testing (Recommended):**
-Use all 24 types for complete coverage:
+Use all 22+ types for complete coverage:
 ```yaml
 types:
   # Original 8 types
@@ -1221,7 +1223,7 @@ The 22+ mutation types work together to provide comprehensive robustness testing
 - **Infrastructure**: HTTP Header Injection, Payload Size Attack, Content-Type Confusion, Query Parameter Poisoning, Request Method Attack, Protocol-Level Attack, Resource Exhaustion, Concurrent Request Pattern, Timeout Manipulation
 - **Temporal/Context**: Temporal Attack, Multi-Turn Attack
 
-For comprehensive testing, use all 24 types. For focused testing:
+For comprehensive testing, use all 22+ types. For focused testing:
 - **Security-focused**: Emphasize Prompt Injection, Advanced Jailbreak, Protocol-Level Attack, HTTP Header Injection
 - **UX-focused**: Emphasize Noise, Tone Shift, Context Manipulation, Language Mixing
 - **Infrastructure-focused**: Emphasize all system/network-level types

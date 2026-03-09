@@ -44,6 +44,8 @@ This guide explains how to connect FlakeStorm to your agent, covering different 
 
 **Note:** Native CI/CD integrations (scheduled runs, pipeline plugins) are **Cloud only**. OSS users run `flakestorm ci` from their own scripts or job runners.
 
+**V2 — API keys:** When using cloud LLM providers (OpenAI, Anthropic, Google) for mutation generation or agent backends, API keys must be set via **environment variables only** (e.g. `OPENAI_API_KEY`). Reference them in config as `api_key: "${OPENAI_API_KEY}"`. Do not put literal keys in config files. See [LLM Providers](LLM_PROVIDERS.md).
+
 ---
 
 ## Internal Code Options
