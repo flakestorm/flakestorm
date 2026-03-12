@@ -76,7 +76,7 @@ With **`version: "2.0"`** in your config, Flakestorm adds environment chaos, beh
 | **Behavioral contracts** | Contracts (invariants × severity) × chaos matrix scenarios; each cell is an independent run (optional reset per cell). | **Resilience score** (0–100%). Use `flakestorm contract run`. Per-contract formula: weighted by severity (critical×3, high×2, medium×1); **auto-FAIL** if any critical fails. |
 | **Replay regression** | Replay saved sessions (e.g. production incidents) and verify against a contract. | Per-session pass/fail; **replay regression** score when run via CI. Use `flakestorm replay run [path]`. |
 
-**Unified CI:** `flakestorm ci` runs mutation run, contract run (if configured), chaos-only run (if chaos configured), and all replay sessions; then computes an **overall resilience score** from `scoring.weights` (default: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10). Weights must sum to 1.0.
+**Unified CI:** `flakestorm ci` runs mutation run, contract run (if configured), chaos-only run (if chaos configured), and all replay sessions; then computes an **overall resilience score** from `scoring.weights` (default: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10). Weights must sum to 1.0. It writes a **CI summary report** (e.g. `flakestorm-ci-report.html`) with per-phase scores and links to **detailed reports** (mutation, contract, chaos, replay). Contract PASS/FAIL in the summary matches the contract detailed report (FAIL if any critical invariant fails). Use `--output DIR` or `--output report.html` and `--min-score N`.
 
 **Reports:** Use `flakestorm contract run --output report.html` and `flakestorm replay run --output report.html` to save HTML reports; both include **suggested actions** for failed cells or sessions (e.g. add reset_endpoint, tighten invariants). Replay accepts a single session file or a directory: `flakestorm replay run path/to/session.yaml` or `flakestorm replay run path/to/replays/`.
 
@@ -1857,6 +1857,22 @@ advanced:
   concurrency: 5  # Max 5 parallel requests
   retries: 3      # Retry failed requests 3 times
 ```
+
+### Reproducible Runs
+
+By default, mutation generation (LLM) and chaos (e.g. fault triggers, payload choice) can vary between runs, so scores may differ. For **deterministic, reproducible runs** (e.g. CI or regression checks), set a **random seed** in config:
+
+```yaml
+advanced:
+  seed: 42   # Same config → same mutations and chaos → same scores
+```
+
+When `advanced.seed` is set:
+
+- **Python random** is seeded at run start, so chaos behavior (which faults trigger, which payloads) is fixed.
+- The **mutation-generation LLM** uses temperature=0, so the same golden prompts produce the same mutations each run.
+
+Use a fixed seed when you need comparable run-to-run results; omit it for exploratory testing where variation is acceptable.
 
 ### Golden Prompt Guide
 

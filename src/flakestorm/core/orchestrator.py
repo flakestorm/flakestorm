@@ -84,21 +84,25 @@ class Orchestrator:
         console: Console | None = None,
         show_progress: bool = True,
         chaos_only: bool = False,
+        preflight_agent: BaseAgentAdapter | None = None,
     ):
         """
         Initialize the orchestrator.
 
         Args:
             config: flakestorm configuration
-            agent: Agent adapter to test
+            agent: Agent adapter to test (used for the actual run)
             mutation_engine: Engine for generating mutations
             verifier: Invariant verification engine
             console: Rich console for output
             show_progress: Whether to show progress bars
             chaos_only: If True, run only golden prompts (no mutation generation)
+            preflight_agent: If set, use this adapter for pre-flight check only (e.g. raw
+                agent when agent is chaos-wrapped, so validation does not fail on injected 503).
         """
         self.config = config
         self.agent = agent
+        self.preflight_agent = preflight_agent
         self.mutation_engine = mutation_engine
         self.verifier = verifier
         self.console = console or Console()
@@ -254,31 +258,33 @@ class Orchestrator:
             )
             self.console.print()
 
-        # Test the first golden prompt
+        # Test the first golden prompt (use preflight_agent when set, e.g. raw agent for
+        # chaos_only so we don't fail on chaos-injected 503)
         if self.show_progress:
             self.console.print("  Testing with first golden prompt...", style="dim")
 
-        response = await self.agent.invoke_with_timing(test_prompt)
+        agent_for_preflight = self.preflight_agent if self.preflight_agent is not None else self.agent
+        response = await agent_for_preflight.invoke_with_timing(test_prompt)
 
         if not response.success or response.error:
             error_msg = response.error or "Unknown error"
             prompt_preview = (
                 test_prompt[:50] + "..." if len(test_prompt) > 50 else test_prompt
             )
-
-            if self.show_progress:
-                self.console.print()
-                self.console.print(
-                    Panel(
-                        f"[red]Agent validation failed![/red]\n\n"
-                        f"[yellow]Test prompt:[/yellow] {prompt_preview}\n"
-                        f"[yellow]Error:[/yellow] {error_msg}\n\n"
-                        f"[dim]Please fix the agent errors (e.g., missing API keys, configuration issues) "
-                        f"before running mutations. This prevents wasting time on a broken agent.[/dim]",
-                        title="[red]Pre-flight Check Failed[/red]",
-                        border_style="red",
-                    )
+            # Always print failure details so user sees the real error (e.g. connection refused)
+            # even when show_progress=False (e.g. flakestorm ci)
+            self.console.print()
+            self.console.print(
+                Panel(
+                    f"[red]Agent validation failed![/red]\n\n"
+                    f"[yellow]Test prompt:[/yellow] {prompt_preview}\n"
+                    f"[yellow]Error:[/yellow] {error_msg}\n\n"
+                    f"[dim]Please fix the agent errors (e.g., missing API keys, configuration issues) "
+                    f"before running mutations. This prevents wasting time on a broken agent.[/dim]",
+                    title="[red]Pre-flight Check Failed[/red]",
+                    border_style="red",
                 )
+            )
             return False
         else:
             if self.show_progress:

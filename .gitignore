@@ -30,6 +30,7 @@ venv/
 ENV/
 env/
 .env
+examples/v2_research_agent/venv_sample
 
 # PyInstaller
 *.manifest

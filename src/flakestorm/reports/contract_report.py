@@ -57,7 +57,7 @@ def generate_contract_html(matrix: "ResilienceMatrix", title: str = "Contract Re
     suggestions_html = ""
     if failed_cells:
         suggestions_html = """
-<h2>Suggested actions (failed cells)</h2>
+<h2>Recommended next steps</h2>
 <p>The following actions may help fix the failed contract cells:</p>
 <ul>
 """
@@ -110,6 +110,7 @@ li {{ margin: 0.5rem 0; }}
   <strong>Resilience score:</strong> <span class="score">{matrix.resilience_score:.1f}%</span><br>
   <strong>Overall:</strong> {'PASS' if matrix.passed else 'FAIL'}
 </div>
+{f'<p class="fail-intro" style="margin-top:1rem;color:var(--danger);"><strong>Why did Contract fail?</strong> One or more invariant × scenario cells did not pass. Check the table below for failed cells, then follow the <strong>Recommended next steps</strong> to fix them.</p>' if not matrix.passed and failed_cells else ''}
 <table>
 <thead><tr><th>Invariant</th><th>Scenario</th><th>Severity</th><th>Result</th></tr></thead>
 <tbody>

@@ -960,7 +960,7 @@ advanced:
 |--------|------|---------|-------------|
 | `concurrency` | integer | `10` | Max concurrent agent requests (1-100) |
 | `retries` | integer | `2` | Retry failed requests (0-5) |
-| `seed` | integer | null | Random seed for reproducibility |
+| `seed` | integer | null | **Reproducible runs:** when set, Python's random is seeded (chaos behavior fixed) and the mutation-generation LLM uses temperature=0 so the same config yields the same results run-to-run. Omit for exploratory, varying runs. |
 
 ---
 

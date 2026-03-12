@@ -107,7 +107,7 @@ This separation allows:
 
 ### Q: What does `flakestorm ci` run?
 
-**A:** It runs, in order: (1) mutation run (with chaos if configured), (2) contract run if `contract` + `chaos_matrix` are configured, (3) chaos-only run if chaos is configured, (4) replay run if `replays` is configured. Then it computes an **overall weighted score** from `scoring.weights` (mutation, chaos, contract, replay); weights must sum to 1.0. Default weights: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10.
+**A:** It runs, in order: (1) mutation run (with chaos if configured), (2) contract run if `contract` + `chaos_matrix` are configured, (3) chaos-only run if chaos is configured, (4) replay run if `replays` is configured. Then it computes an **overall weighted score** from `scoring.weights` (mutation, chaos, contract, replay); weights must sum to 1.0. Default weights: mutation 0.20, chaos 0.35, contract 0.35, replay 0.10. It also writes a **CI summary report** (e.g. `flakestorm-ci-report.html`) with per-phase scores and links to **detailed reports** (mutation, contract, chaos, replay). Contract phase PASS/FAIL in the summary matches the contract detailed report (FAIL if any critical invariant fails). Use `--output` to control where reports are saved and `--min-score` for the overall pass threshold.
 
 ---
 

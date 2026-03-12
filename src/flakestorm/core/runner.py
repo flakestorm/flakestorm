@@ -7,6 +7,7 @@ and provides a simple API for executing reliability tests.
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -65,6 +66,10 @@ class FlakeStormRunner:
         else:
             self.config = config
 
+        # Reproducibility: fix Python random seed so chaos and any sampling are deterministic
+        if self.config.advanced.seed is not None:
+            random.seed(self.config.advanced.seed)
+
         self.chaos_only = chaos_only
 
         # Load chaos profile if requested
@@ -108,8 +113,16 @@ class FlakeStormRunner:
             self.agent = create_instrumented_adapter(base_agent, self.config.chaos)
         else:
             self.agent = base_agent
-        self.mutation_engine = MutationEngine(self.config.model)
+        # When seed is set, use temperature=0 for mutation generation so same prompts → same mutations
+        model_cfg = self.config.model
+        if self.config.advanced.seed is not None:
+            model_cfg = model_cfg.model_copy(update={"temperature": 0.0})
+        self.mutation_engine = MutationEngine(model_cfg)
         self.verifier = InvariantVerifier(self.config.invariants)
+
+        # When agent is chaos-wrapped, pre-flight must use the raw agent so we don't fail on
+        # chaos-injected 503 (e.g. in CI mutation phase or chaos_only phase).
+        preflight_agent = base_agent if self.config.chaos else None
 
         # Create orchestrator
         self.orchestrator = Orchestrator(
@@ -118,6 +131,7 @@ class FlakeStormRunner:
             mutation_engine=self.mutation_engine,
             verifier=self.verifier,
             console=self.console,
+            preflight_agent=preflight_agent,
             show_progress=self.show_progress,
             chaos_only=chaos_only,
         )

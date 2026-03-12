@@ -210,7 +210,9 @@ def calculate_overall_resilience(scores: list[float], weights: list[float]) -> f
     Weighted average for mutation_robustness, chaos_resilience, contract_compliance, replay_regression.
     """
     if _RUST_AVAILABLE:
-        return flakestorm_rust.calculate_overall_resilience(scores, weights)
+        rust_fn = getattr(flakestorm_rust, "calculate_overall_resilience", None)
+        if rust_fn is not None:
+            return rust_fn(scores, weights)
 
     n = min(len(scores), len(weights))
     if n == 0:

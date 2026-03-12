@@ -52,6 +52,9 @@ flakestorm replay export --from-report reports/report.json -o examples/v2_resear
 
 # Full CI run (mutation + contract + chaos + replay, overall weighted score)
 flakestorm ci -c examples/v2_research_agent/flakestorm.yaml --min-score 0.5
+
+# CI with reports: summary + detailed phase reports (mutation, contract, chaos, replay)
+flakestorm ci -c examples/v2_research_agent/flakestorm.yaml -o ./reports --min-score 0.5
 ```
 
 ## 3. What this example demonstrates
@@ -63,6 +66,7 @@ flakestorm ci -c examples/v2_research_agent/flakestorm.yaml --min-score 0.5
 | **Replay** | `replays.sessions` with `file: replays/incident_001.yaml`; contract resolved by name "Research Agent Contract" |
 | **Scoring** | `scoring` weights (mutation 20%, chaos 35%, contract 35%, replay 10%); used in `flakestorm ci` |
 | **Reset** | `agent.reset_endpoint: http://localhost:8790/reset` for contract matrix isolation |
+| **Reproducibility** | Set `advanced.seed` (e.g. `42`) for deterministic chaos and mutation generation; same config → same scores. |
 
 ## 4. Config layout (v2.0)
 

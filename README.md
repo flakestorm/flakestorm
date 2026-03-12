@@ -74,7 +74,7 @@ On top of that, Flakestorm still runs **adversarial prompt mutations** (22+ muta
 | **Chaos only** | `flakestorm run --chaos --chaos-only` | No mutations; golden prompts only, with chaos. Single chaos resilience score. |
 | **Contract only** | `flakestorm contract run` | Contract × chaos matrix; resilience score. |
 | **Replay only** | `flakestorm replay run path/to/replay.yaml -c flakestorm.yaml` | One or more replay sessions. |
-| **ALL (full CI)** | `flakestorm ci` | Mutation run + contract (if configured) + chaos-only run (if chaos configured) + all replay sessions (if configured); then **overall** weighted score. |
+| **ALL (full CI)** | `flakestorm ci` | Mutation run + contract (if configured) + chaos-only run (if chaos configured) + all replay sessions (if configured); then **overall** weighted score. Writes a **summary report** (e.g. `flakestorm-ci-report.html`) with per-phase scores and links to detailed reports; use `--output DIR` or `--output report.html` and `--min-score N`. |
 
 **Context attacks** are part of environment chaos: adversarial content is applied to **tool responses or to the input before invoke**, not to the user prompt itself. The chaos interceptor applies **memory_poisoning** to the user input before each invoke; LLM faults (timeout, truncated, empty, garbage, rate_limit, response_drift) are applied in the interceptor (timeout before the call, others after the response). Types: **indirect_injection** (tool returns valid-looking content with hidden instructions), **memory_poisoning** (payload into input before invoke; strategy `prepend` | `append` | `replace`), **system_prompt_leak_probe** (contract assertion using probe prompts). Config: list of attack configs or dict (e.g. `memory_poisoning: { payload: "...", strategy: "append" }`). Scenarios in the contract chaos matrix can each define `context_attacks`. See [Context Attacks](docs/CONTEXT_ATTACKS.md).
 
@@ -158,7 +158,8 @@ For the full **V1 vs V2 flow** (mutation-only vs four pillars, contract matrix i
 - **Unified resilience score** — For full CI: weighted combination of **mutation robustness**, chaos resilience, contract compliance, and replay regression; weights (mutation, chaos, contract, replay) configurable in YAML and must sum to 1.0.
 - **Context attacks** — indirect_injection (into tool/context), memory_poisoning (into input before invoke; strategy: prepend/append/replace), system_prompt_leak_probe (contract assertion with probe prompts). Config: list or dict. [→ Context Attacks](docs/CONTEXT_ATTACKS.md)
 - **LLM providers** — Ollama, OpenAI, Anthropic, Google (Gemini); API keys via env only. [→ LLM Providers](docs/LLM_PROVIDERS.md)
-- **Reports** — Interactive HTML and JSON; contract matrix and replay reports.
+- **Reports** — Interactive HTML and JSON; contract matrix and replay reports. **`flakestorm ci`** writes a **summary report** (`flakestorm-ci-report.html`) with per-phase scores and **links to detailed reports** (mutation, contract, chaos, replay). Contract PASS/FAIL in the summary matches the contract detailed report (FAIL if any critical invariant fails).
+- **Reproducible runs** — Set `advanced.seed` in config (e.g. `seed: 42`) for deterministic results: Python random is seeded (chaos behavior fixed) and the mutation-generation LLM uses temperature=0 so the same config yields the same scores run-to-run.
 
 **Try it:** [Working example](examples/v2_research_agent/README.md) with chaos, contracts, and replay from the CLI.
 

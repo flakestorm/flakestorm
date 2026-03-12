@@ -538,12 +538,23 @@ flakestorm replay export --from-report FILE  # Export from an existing report
 
 ### V2: `flakestorm ci`
 
-Run full CI pipeline: mutation run, contract run (if configured), chaos-only (if chaos configured), replay (if configured); then compute overall weighted score from `scoring.weights`.
+Run full CI pipeline: mutation run, contract run (if configured), chaos-only (if chaos configured), replay (if configured); then compute overall weighted score from `scoring.weights`. Writes a **CI summary report** (e.g. `flakestorm-ci-report.html`) with per-phase scores and **"View detailed report"** links to phase-specific reports (mutation, contract, chaos, replay). Contract phase PASS/FAIL in the summary matches the contract detailed report (FAIL if any critical invariant fails).
 
 ```bash
 flakestorm ci
 flakestorm ci --config custom.yaml
+flakestorm ci --min-score 0.5              # Fail if overall score below 0.5
+flakestorm ci --output ./reports            # Save summary + detailed reports to directory
+flakestorm ci --output report.html          # Save summary report to file
+flakestorm ci --quiet                       # Minimal output, no progress bars
 ```
+
+| Option | Description |
+|--------|-------------|
+| `--config`, `-c` | Config file path (default: `flakestorm.yaml`) |
+| `--min-score` | Minimum overall (weighted) score to pass (default: 0.0) |
+| `--output`, `-o` | Path to save reports: directory (creates `flakestorm-ci-report.html` + phase reports) or HTML file path |
+| `--quiet`, `-q` | Minimal output, no progress bars |
 
 ---
 

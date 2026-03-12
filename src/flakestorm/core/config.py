@@ -368,7 +368,8 @@ class AdvancedConfig(BaseModel):
         default=2, ge=0, le=5, description="Number of retries for failed requests"
     )
     seed: int | None = Field(
-        default=None, description="Random seed for reproducibility"
+        default=None,
+        description="Random seed for reproducible runs. When set: Python random is seeded (chaos behavior fixed) and mutation-generation LLM uses temperature=0 so the same config yields the same results.",
     )
 
 
