@@ -10,13 +10,13 @@
 
 Our ecosystem addresses the four primary failure modes of AI agents:
 
-### 🧹 [Session-Sift](https://github.com/flakestorm/session-sift)
-**The Optimizer (Context & Memory)** A semantic "Garbage Collector" for LLM sessions. It prunes context rot, resolved errors, and terminal noise to slash token costs by up to 60% while preventing semantic drift in long-running chats.
-* **Core Tech:** MCP Server, Heuristic Pruning, Token FinOps.
-
 ### 🧪 [Flakestorm Chaos](https://github.com/flakestorm/flakestorm/blob/main/CHAOS_ENGINE.md) (This Repo)
 **The Auditor (Resilience)** Chaos Engineering for AI Agents. We deliberately inject failures, tool-latency, and adversarial inputs to verify that your agents degrade gracefully and adhere to behavioral contracts under fire.
 * **Core Tech:** Failure Injection, Agentic Unit Testing, Red Teaming.
+
+### 🧹 [Session-Sift](https://github.com/flakestorm/session-sift)
+**The Optimizer (Context & Memory)** A semantic "Garbage Collector" for LLM sessions. It prunes context rot, resolved errors, and terminal noise to slash token costs by up to 60% while preventing semantic drift in long-running chats.
+* **Core Tech:** MCP Server, Heuristic Pruning, Token FinOps.
 
 ### ⚖️ [VibeDiff](https://github.com/flakestorm/vibediff)
 **The Notary (Semantic Intent)** A high-performance Rust auditor that verifies if agentic code changes actually match the developer's stated intent. It bridges the gap between "The Git Diff" and "The Vibe."
