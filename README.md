@@ -22,7 +22,7 @@ Our ecosystem addresses the four primary failure modes of AI agents:
 **The Notary (Semantic Intent)** A high-performance Rust auditor that verifies if agentic code changes actually match the developer's stated intent. It bridges the gap between "The Git Diff" and "The Vibe."
 * **Core Tech:** Rust, Tree-sitter AST Analysis, Semantic Audit.
 
-### 🛡️ [Veraxiv](https://github.com/flakestorm/veraxiv)
+### 🛡️ [Veraxiv](https://github.com/franciscohumarang/veraxiv)
 **The Shield (Verification & Attestation)** The final gate for autonomous systems. Veraxiv provides a high-integrity verification layer and tamper-proof attestation for machine-generated actions and outputs.
 * **Core Tech:** Verification Protocol, Compliance Audit, Attestation.
 
